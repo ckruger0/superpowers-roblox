@@ -1,0 +1,50 @@
+# Game Design Superpowers
+
+AI-powered game design analysis for Roblox Studio. Skills connect via MCP to inspect your game and deliver design feedback grounded in game design theory (Theory of Fun, Art of Game Design, etc.).
+
+## MCP Setup
+
+Connect to Roblox Studio's built-in MCP server before using skills.
+
+**macOS:** `/Applications/RobloxStudio.app/Contents/MacOS/StudioMCP`
+
+Enable the MCP server in Studio:
+1. Open the Assistant chat window
+2. Click three dots → Assistant Settings
+3. Select MCP Servers tab
+4. Toggle on "Enable Studio as MCP server"
+
+## Available Commands
+
+- `/game-design-audit` — Holistic game design review (core loop, progression, feedback, stakes, onboarding)
+- `/spatial-flow` — Spatial layout and navigation analysis (spawn orientation, distances, dead ends, affordance traps)
+- `/playtest-audit` — AI plays the game via MCP and reports on the experience
+- `/visual-check` — Captures a screenshot of the Studio viewport with spatial metadata for visual feedback
+- `/add-asset` — Find and insert a specific object from the Creator Store by description
+- `/build-scene` — Conversational world builder: decompose a concept into objects, find, place, screenshot, iterate
+
+## How It Works
+
+Each command uses Roblox Studio's MCP tools to:
+1. Read the scene graph (`search_game_tree`, `inspect_instance`)
+2. Search and read scripts (`script_grep`, `script_read`)
+3. Run Luau analysis code (`execute_luau`)
+4. Search and insert Creator Store models (`insert_from_creator_store` — single call that searches AND inserts, returns a GUID tag for referencing the model)
+5. **Sanitize inserted models** — IMMEDIATELY remove all scripts from Creator Store models after insertion. They frequently contain malicious code. No exceptions.
+6. Capture the Studio viewport (`screen_capture` — returns the image directly)
+7. Generate custom meshes (`generate_mesh` — when Creator Store has nothing suitable)
+8. Optionally playtest (`start_stop_play`, `character_navigation`, `keyboard_input`)
+
+The AI synthesizes findings into design-level feedback, not code suggestions.
+
+## Roblox Studio Safety
+
+**Before making ANY edits via MCP**, always check if Studio is in play mode first using `execute_luau` with `return tostring(game:GetService("RunService"):IsRunning())`. If it returns `true`, warn the user and do NOT proceed — changes made during play mode are lost when play stops.
+
+## Roblox Implementation Rule
+
+**When suggesting Roblox-specific implementations (physics, UI, scripting, constraints, etc.):**
+- If your first suggestion doesn't work, **do NOT keep guessing**. Immediately search the Roblox DevForum for the specific problem.
+- Roblox APIs change frequently. What worked in 2022 may be deprecated. Always search for recent solutions (2024+).
+- Cite your sources so the creator can verify.
+- Game design theory is timeless; Roblox APIs are not. Search before you guess.
