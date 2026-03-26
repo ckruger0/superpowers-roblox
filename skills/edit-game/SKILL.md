@@ -92,6 +92,8 @@ Reconcile specialist outputs and present unified options:
 
 ## Phase 5: BUILD + VERIFY
 
+**Lean heavily on Creator Store assets** — when adding or replacing objects, always use `insert_from_creator_store` first. Polished assets keep the kid excited about their game. Primitives are only for structural geometry (floors, walls, ceilings).
+
 Once the kid approves:
 
 1. **Dispatch `build`** to implement changes

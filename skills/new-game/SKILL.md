@@ -135,6 +135,10 @@ Created initial GDD. Creator's vision: [summary]. First slice: [what we're build
 
 ## Phase 4: BUILD (auto-dispatch with creative checkpoints)
 
+<HARD-RULE>
+**Use Creator Store assets for EVERYTHING except structural geometry (floors, walls, ceilings).** The game should look polished from the first screenshot. Kids get excited when their game looks real — a Creator Store lava pit with particle effects is 100x more motivating than an orange Part. Use `insert_from_creator_store` aggressively: platforms, obstacles, decorations, props, hazards, checkpoints, scenery. If the Creator Store doesn't have it, try `generate_mesh`. Primitives are the absolute last resort and should be rare.
+</HARD-RULE>
+
 Build the first slice room by room. For each room:
 
 1. **Dispatch `build` skill** with the room's object list from the level plan

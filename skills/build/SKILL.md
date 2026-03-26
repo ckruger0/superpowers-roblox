@@ -11,6 +11,10 @@ Conversational world builder. Takes a high-level concept ("living room", "pirate
 
 **Core principle:** Build incrementally, verify visually, iterate based on what you see. Don't try to place 20 objects blind — place 3, check, adjust, add more.
 
+<HARD-RULE>
+**Creator Store assets for EVERYTHING except structural geometry.** Floors, walls, and ceilings can be primitives (you need exact control over dimensions and openings). Everything else — furniture, props, obstacles, decorations, hazards, scenery, vehicles, creatures — MUST come from the Creator Store first. The game should look polished, not blocky. A Creator Store "lava rock" with textures and mesh detail looks 100x better than an orange Part. Search aggressively with multiple query variations before falling back to `generate_mesh`, and only use primitives as a last resort.
+</HARD-RULE>
+
 ## Process Flow
 
 ```dot
