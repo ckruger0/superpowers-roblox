@@ -257,6 +257,12 @@ Gems to hide (if applicable):
 - Each room gets full visual verification attention
 - Cross-room issues (scale consistency, style coherence) checked between rooms
 
+## Roblox Implementation Notes
+
+### Moving Platforms
+
+If placing platforms that move (conveyor belts, elevators, sliding platforms), they MUST use the TweenService + AssemblyLinearVelocity pattern or players will slide off. See `skills/mechanics-designer/SKILL.md` → "Roblox Implementation Notes" for the full code pattern. Do NOT use BodyVelocity, AlignPosition, or raw CFrame updates — those don't carry players.
+
 ## Key Principles
 
 - **Batch and verify.** Never place more than 5 objects without looking.

@@ -46,6 +46,41 @@ Draw from these patterns (adapt to the creator's game, don't just list them):
 **Checkpoints:** Where to place them (after hard sections, before boss rooms, never right before easy parts)
 **Difficulty curve:** Easy → medium → breather → hard → climax pattern
 
+## Roblox Implementation Notes
+
+### Moving Platforms (REQUIRED TECHNIQUE)
+
+Moving platforms in Roblox will NOT carry players unless you set `AssemblyLinearVelocity` on the part every frame. Simply tweening an anchored part moves it visually but the physics engine doesn't know about it, so players slide off.
+
+**The correct approach:**
+
+1. **Tween the anchored part** with `TweenService:Create` using `-1` repeats and `true` for reverses (infinite back-and-forth)
+2. **Every frame via `RunService.Stepped`**, calculate the platform's velocity: `deltaPosition / deltaTime` (compare current position to last frame's position)
+3. **Set `part.AssemblyLinearVelocity`** to that calculated velocity so the physics engine carries players standing on it
+
+```lua
+-- Moving platform pattern
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local platform = script.Parent -- Anchored BasePart
+local startPos = platform.Position
+local endPos = startPos + Vector3.new(20, 0, 0) -- adjust direction/distance
+
+local tweenInfo = TweenInfo.new(3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true)
+local tween = TweenService:Create(platform, tweenInfo, {Position = endPos})
+tween:Play()
+
+local lastPos = platform.Position
+RunService.Stepped:Connect(function(_, dt)
+    local currentPos = platform.Position
+    platform.AssemblyLinearVelocity = (currentPos - lastPos) / dt
+    lastPos = currentPos
+end)
+```
+
+**Do NOT** try to move platforms with BodyVelocity, AlignPosition, or by setting CFrame every frame — those approaches either don't carry players or have been deprecated. The TweenService + AssemblyLinearVelocity pattern is the reliable modern approach.
+
 ## Rules
 
 - **Propose concrete ideas, not abstract theory.** "What if the lava rises 1 stud per second?" not "Consider adding time pressure."
