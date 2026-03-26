@@ -7,3 +7,5 @@
 Thumbs.db
 /tmp/
 *.png
+.superpowers/
+.game-studio/
