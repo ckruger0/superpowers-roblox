@@ -1,57 +1,26 @@
 # Superpowers: Roblox
 
-AI-powered game design skills for Roblox Studio, inspired by [Superpowers](https://github.com/obra/superpowers). Connect via MCP to get design-level feedback on your games, build scenes conversationally, and capture visual snapshots — all from Claude Code or any MCP-compatible AI client.
+An AI game studio for Roblox. Tell it what you want to make, and it helps you design, build, and playtest your game — all from Claude Code.
 
-## What This Is
+Built for young creators who have a vision but don't know where to start. Powered by [Superpowers](https://github.com/obra/superpowers) and Roblox Studio's MCP server.
 
-A set of composable AI skills that turn Claude into a game design consultant for Roblox. Instead of generating code or assets, these skills evaluate whether your experience is **fun, engaging, and well-designed** — grounded in game design theory (Theory of Fun, Art of Game Design, Flow theory).
+## Quick Start
 
-The skills also include world-building tools that search the Creator Store, place objects, verify placement visually, and iterate until the scene looks right.
-
-## Available Commands
-
-| Command | What it does |
-|---------|-------------|
-| `/game-design-audit` | Conversational game design review — asks about your intent before evaluating core loop, progression, feedback, stakes, onboarding |
-| `/spatial-flow` | Analyzes level layout, spawn orientation, sightlines, dead ends, affordance traps |
-| `/playtest-audit` | AI plays your game via MCP and reports on the first-time player experience |
-| `/visual-check` | Captures a screenshot of the Studio viewport with spatial metadata for visual feedback |
-| `/add-asset` | Finds and inserts a Creator Store model by description, with placement verification |
-| `/build-scene` | Conversational world builder — decomposes a concept into objects, places them, screenshots, iterates |
-
-## Installation
-
-### Option A: Install as a Plugin (Recommended)
-
-Install directly into Claude Code from anywhere — no need to clone the repo:
+### Install the Plugin
 
 ```
 /plugin marketplace add ckruger0/superpowers-roblox
 /plugin install superpowers-roblox
 ```
 
-This gives you all six skills and slash commands globally.
-
-### Option B: Clone and Use Locally
-
-Clone the repo and run Claude Code from inside it:
-
-```bash
-git clone https://github.com/ckruger0/superpowers-roblox.git
-cd superpowers-roblox
-claude
-```
-
-### Connect Roblox Studio MCP
-
-Whichever option you chose, you need the Roblox Studio MCP server running:
+### Connect Roblox Studio
 
 1. Open the Assistant chat window in Roblox Studio
 2. Click three dots → Assistant Settings
 3. Select MCP Servers tab
 4. Toggle on "Enable Studio as MCP server"
 
-Then add the MCP server to your Claude Code config:
+Add the MCP server to your Claude Code config:
 
 **macOS:**
 ```json
@@ -64,62 +33,48 @@ Then add the MCP server to your Claude Code config:
 }
 ```
 
-### Use the Skills
-
-Open Roblox Studio with your game and run any command:
+### Make a Game
 
 ```
-/game-design-audit
+/new-game
 ```
 
-The AI will inspect your game via MCP and start a conversation about your design.
+Tell it your idea. It takes care of the rest.
+
+## Your AI Game Studio
+
+Every skill maps to a role on a game development team:
+
+| Command | Role | What they do |
+|---------|------|-------------|
+| `/new-game` | **Creative Director** | Takes your idea from concept to playable game |
+| `/edit-game` | **Creative Director** | Picks up where you left off — fixes, improves, adds more |
+| `/build` | **World Builder** | Places and arranges 3D objects from the Creator Store |
+| `/add-asset` | **Prop Artist** | Finds and inserts a single object |
+| `/screenshot` | **Cinematographer** | Captures what the game looks like |
+| `/review-game` | **Design Reviewer** | Checks if your game is fun and well-designed |
+| `/review-layout` | **Level Reviewer** | Checks if players can navigate your space |
+| `/playtest` | **QA Tester** | Plays your game and reports what happened |
+
+Behind the scenes, the Creative Director also dispatches **creative specialists** — a Mechanics Engineer, Story Architect, and Level Flow Planner — who brainstorm ideas in parallel and bring them back for you to choose from.
 
 ## How It Works
 
-The skills use Roblox Studio's MCP tools to:
-1. **Read the scene graph** — `search_game_tree`, `inspect_instance`
-2. **Search and read scripts** — `script_grep`, `script_read`
-3. **Run Luau analysis** — `execute_luau` with helper scripts in `luau/`
-4. **Insert Creator Store models** — `insert_from_creator_store` (search + insert in one call)
-5. **Capture the viewport** — `screen_capture` returns the image directly
-6. **Generate meshes** — `generate_mesh` for custom objects
-7. **Playtest** — `start_stop_play`, `character_navigation`, `keyboard_input`
+The skills use Roblox Studio's MCP server to read your game, place objects, capture screenshots, and playtest — all without leaving Claude Code. A **game design document** (`game-design-doc.md`) keeps track of your vision, mechanics, story, and what's been built so far.
 
-## Key Design Principles
+## Key Principles
 
-- **Ask before you judge** — skills understand the creator's intent before giving feedback
-- **One question at a time** — conversational, not overwhelming
-- **Creator's vision is primary** — a deliberately unfair obby is a valid design choice
-- **Evidence over opinion** — feedback cites specific objects, distances, and scripts
-- **Search before you guess** — if a Roblox implementation fails, search the DevForum before iterating
-- **Creator Store first, primitives last** — always try real models before building from blocks
-- **Sanitize Creator Store models** — strip all scripts from inserted models (malware is common)
+- **Speed to magic moment** — You're playing a rough version of your game within minutes
+- **Paintbrush, not autopilot** — You make the creative decisions, the AI does the heavy lifting
+- **Your vision is primary** — The AI helps you achieve YOUR goals, not generic "best practices"
+- **Build, play, iterate** — Make something, try it, improve it. That's how real games are made.
 
-## Project Structure
+## Security
 
-```
-.claude/commands/     # Slash command entry points (thin pointers to skills)
-skills/               # Full skill definitions (SKILL.md + supporting files)
-  game-design-audit/  # Conversational game design review
-  spatial-flow/       # Level layout analysis
-  playtest-audit/     # AI playtests the game
-  visual-check/       # Screenshot capture + analysis
-  add-asset/          # Creator Store search + insert
-  build-scene/        # Conversational world builder
-luau/                 # Luau helper scripts for spatial analysis
-test-games/           # Test game build instructions
-```
+Creator Store free models frequently contain malicious scripts. All skills enforce **mandatory script sanitization** — every inserted model has all scripts removed immediately after insertion.
 
-## Security Note
+## Credits
 
-Creator Store free models frequently contain malicious scripts (backdoors, obfuscated loaders, crypto miners). All skills enforce **mandatory script sanitization** — every inserted model has all `BaseScript` descendants destroyed immediately after insertion, before any other operations.
-
-## Inspired By
-
-This project is inspired by [Superpowers](https://github.com/obra/superpowers) by Jesse Vincent ([@obra](https://github.com/obra)) — a composable skills framework for AI coding agents. Superpowers provides the architecture pattern of structured, conversational AI skills with hard gates, process flows, and iterative verification. This project adapts that pattern for game design in Roblox Studio.
-
-## Built With
-
-- [Superpowers](https://github.com/obra/superpowers) — skill architecture and philosophy
+- [Superpowers](https://github.com/obra/superpowers) by Jesse Vincent — skill architecture and philosophy
 - [Roblox Studio MCP](https://create.roblox.com/docs/studio/mcp) — the bridge between AI and Studio
 - [Claude Code](https://claude.ai/claude-code) — AI client
