@@ -1,8 +1,8 @@
-Read and follow the skill at `skills/build-scene/SKILL.md`.
+Read and follow the skill at `skills/build/SKILL.md`.
 
 This is a CONVERSATIONAL world builder. Ask the creator about their vision before placing anything.
 
-Uses `add-asset` skill internally for each object. Uses `visual-check` skill to screenshot and verify after each batch.
+Uses `add-asset` skill internally for each object. Uses `screenshot` skill to screenshot and verify after each batch.
 
 Use `insert_from_creator_store` MCP tool to search and insert Creator Store models in a single call. It returns a GUID tag to reference the inserted model via `CollectionService:GetTagged("Assistant:<GUID>")`.
 

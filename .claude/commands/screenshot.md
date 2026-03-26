@@ -1,4 +1,4 @@
-Read and follow the skill at `skills/visual-check/SKILL.md`.
+Read and follow the skill at `skills/screenshot/SKILL.md`.
 
 Use Roblox Studio MCP tools to position the camera and gather metadata. `execute_luau` returns the script's **return value** (not print output).
 
