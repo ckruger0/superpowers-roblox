@@ -1,6 +1,6 @@
 # Game Design Superpowers
 
-AI-powered game design analysis for Roblox Studio. Skills connect via MCP to inspect your game and deliver design feedback grounded in game design theory (Theory of Fun, Art of Game Design, etc.).
+AI-powered game studio for Roblox. Skills connect via MCP to inspect, build, and playtest your game — delivering design feedback grounded in game design theory.
 
 ## MCP Setup
 
@@ -16,12 +16,22 @@ Enable the MCP server in Studio:
 
 ## Available Commands
 
-- `/game-design-audit` — Holistic game design review (core loop, progression, feedback, stakes, onboarding)
-- `/spatial-flow` — Spatial layout and navigation analysis (spawn orientation, distances, dead ends, affordance traps)
-- `/playtest-audit` — AI plays the game via MCP and reports on the experience
-- `/visual-check` — Captures a screenshot of the Studio viewport with spatial metadata for visual feedback
+- `/new-game` — Start a new game from an idea. Brainstorms, designs, and builds the first playable slice.
+- `/edit-game` — Pick up an existing game. Reads the game design doc, diagnoses issues, and iterates.
+- `/build` — Conversational world builder: decompose a concept into objects, find, place, screenshot, iterate
 - `/add-asset` — Find and insert a specific object from the Creator Store by description
-- `/build-scene` — Conversational world builder: decompose a concept into objects, find, place, screenshot, iterate
+- `/screenshot` — Capture the Studio viewport with spatial metadata for visual feedback
+- `/review-game` — Holistic game design review (core loop, progression, feedback, stakes, onboarding)
+- `/review-layout` — Spatial layout and navigation analysis (spawn orientation, distances, dead ends, affordance traps)
+- `/playtest` — AI plays the game via MCP and reports on the experience
+
+## Creative Specialists (dispatched by orchestrators)
+
+These skills are dispatched by `new-game` and `edit-game` as parallel agents. They can also be invoked standalone via the Skill tool:
+
+- `mechanics-designer` — Gameplay systems: risk/reward, difficulty curves, interactive elements
+- `narrative-designer` — Story and atmosphere: motivation, emotional beats, environmental storytelling
+- `level-designer` — Pacing and progression: difficulty ramps, section ordering, breathers
 
 ## How It Works
 
@@ -35,7 +45,9 @@ Each command uses Roblox Studio's MCP tools to:
 7. Generate custom meshes (`generate_mesh` — when Creator Store has nothing suitable)
 8. Optionally playtest (`start_stop_play`, `character_navigation`, `keyboard_input`)
 
-The AI synthesizes findings into design-level feedback, not code suggestions.
+## Game Design Document
+
+The GDD (`game-design-doc.md`) is the persistent state file for a game project. Written by `new-game`, read and updated by all skills. Contains vision, core mechanics, narrative, level plan, and a timestamped dev log.
 
 ## Roblox Studio Safety
 
