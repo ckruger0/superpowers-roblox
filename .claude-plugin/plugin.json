@@ -1,10 +1,19 @@
 {
   "name": "superpowers-roblox",
+  "description": "AI-powered game design analysis skills for Roblox Studio — audits, spatial flow, playtesting, world building, and more",
   "version": "1.0.0",
-  "description": "AI-powered game design analysis skills for Roblox Studio",
   "author": {
     "name": "ckruger0"
   },
-  "skills": "./skills",
-  "commands": "./.claude/commands"
+  "homepage": "https://github.com/ckruger0/superpowers-roblox",
+  "repository": "https://github.com/ckruger0/superpowers-roblox",
+  "license": "MIT",
+  "keywords": [
+    "roblox",
+    "game-design",
+    "skills",
+    "mcp",
+    "spatial-analysis",
+    "playtesting"
+  ]
 }
