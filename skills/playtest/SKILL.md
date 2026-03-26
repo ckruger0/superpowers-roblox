@@ -1,9 +1,9 @@
 ---
-name: playtest-audit
+name: playtest
 description: Use when a Roblox creator wants the AI to actually play their game via MCP and report on the experience — testing navigation, difficulty, pacing, and first impressions
 ---
 
-# Playtest Audit
+# Playtest
 
 ## Overview
 
@@ -15,7 +15,7 @@ AI plays the Roblox experience via MCP tools and reports on the experience from 
 
 - Creator wants to see their game played by a fresh pair of eyes
 - Creator wants to test difficulty, pacing, or first-time experience
-- After game-design-audit or spatial-flow to add experiential data
+- After review-game or review-layout to add experiential data
 - Creator says "play my game and tell me what you think"
 
 ## Process Flow

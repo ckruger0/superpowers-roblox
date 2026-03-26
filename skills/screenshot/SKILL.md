@@ -1,9 +1,9 @@
 ---
-name: visual-check
+name: screenshot
 description: Use when you need to SEE the Roblox experience to answer a question — when spatial relationships, visual design, object placement, or "does this look right" matters. Also use proactively before giving spatial feedback.
 ---
 
-# Visual Check
+# Screenshot
 
 ## Overview
 
@@ -15,7 +15,7 @@ Captures a screenshot of the Roblox Studio viewport with spatial metadata, so th
 
 - Creator asks "does this look right?" or "how does this look?"
 - You need to verify a spatial change you just made (moved an object, adjusted layout)
-- Giving spatial-flow feedback and want to see sightlines
+- Giving review-layout feedback and want to see sightlines
 - Creator shares a screenshot and you need to compare against current state
 - Before suggesting object placement — see the space first
 

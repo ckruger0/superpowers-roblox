@@ -1,9 +1,9 @@
 ---
-name: build-scene
+name: build
 description: Use when a creator wants to build an environment or scene from a concept — e.g. "build me a living room", "create a medieval tavern", "set up a race track". Conversational world builder that decomposes concepts into objects, finds and places them, and visually iterates.
 ---
 
-# Build Scene
+# Build
 
 ## Overview
 
@@ -149,7 +149,7 @@ Fix any issues found BEFORE taking a screenshot. Common fixes:
 
 ### Step 2: Visual check (screenshot)
 
-Use the `visual-check` skill with `luau/smart-camera.luau` to frame the scene.
+Use the `screenshot` skill with `luau/smart-camera.luau` to frame the scene.
 Set `TARGET` to a central object or take multiple shots from different angles.
 
 Then use the `screen_capture` MCP tool to capture the viewport.
@@ -224,7 +224,7 @@ For scenes with multiple distinct areas (dungeon rooms, house floors, city block
 
 ### Sub-Agent Prompt
 
-Use `skills/build-scene/room-builder-prompt.md` as the base prompt for each sub-agent. Append the room-specific details:
+Use `skills/build/room-builder-prompt.md` as the base prompt for each sub-agent. Append the room-specific details:
 
 ```
 You are building Room N: "[Theme Name]"

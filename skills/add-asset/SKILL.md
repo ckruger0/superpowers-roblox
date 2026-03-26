@@ -7,7 +7,7 @@ description: Use when you need to find and insert a specific object from the Rob
 
 ## Overview
 
-Atomic skill: search the Roblox Creator Store for an object by description, insert it into the scene, and position it. Used standalone or as a building block by `build-scene`.
+Atomic skill: search the Roblox Creator Store for an object by description, insert it into the scene, and position it. Used standalone or as a building block by `build`.
 
 ## Process
 

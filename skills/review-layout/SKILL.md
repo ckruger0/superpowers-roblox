@@ -1,9 +1,9 @@
 ---
-name: spatial-flow
+name: review-layout
 description: Use when a Roblox creator wants feedback on level layout, player navigation, spawn design, or spatial pacing. Triggers on requests like "does my layout work", "where should I put things", "players get lost", "spawn feedback"
 ---
 
-# Spatial Flow
+# Review Layout
 
 ## Overview
 
@@ -16,7 +16,7 @@ Analyze how players move through a Roblox experience — spawn orientation, sigh
 - Creator asks about layout, navigation, or spatial design
 - Creator reports "players get lost" or "players don't know where to go"
 - Creator wants feedback on spawn placement or level flow
-- Part of a broader game design audit (can be invoked by `game-design-audit`)
+- Part of a broader game design audit (can be invoked by `review-game`)
 
 ## Process Flow
 

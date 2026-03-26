@@ -1,9 +1,9 @@
 ---
-name: game-design-audit
+name: review-game
 description: Use when a Roblox creator wants design feedback on their experience — evaluating whether the game is fun, engaging, and well-designed. Triggers on requests like "review my game", "is this fun", "game design feedback", "what's wrong with my experience"
 ---
 
-# Game Design Audit
+# Review Game
 
 ## Overview
 
