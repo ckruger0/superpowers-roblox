@@ -7,8 +7,8 @@
     {
       "name": "superpowers-roblox",
       "source": {
-        "source": "github",
-        "repo": "ckruger0/superpowers-roblox"
+        "source": "url",
+        "url": "https://github.com/ckruger0/superpowers-roblox.git"
       },
       "description": "AI-powered game design analysis skills for Roblox Studio — audits, spatial flow, playtesting, world building, and more",
       "version": "1.0.0"
