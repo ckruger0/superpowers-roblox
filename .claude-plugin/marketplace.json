@@ -1,14 +1,14 @@
 {
   "name": "superpowers-roblox",
-  "description": "Game design skills for Roblox Studio",
+  "description": "AI game studio for Roblox — design, build, and playtest games from Claude Code",
   "owner": {
     "name": "ckruger0"
   },
   "plugins": [
     {
       "name": "superpowers-roblox",
-      "description": "AI-powered game design analysis skills for Roblox Studio — audits, spatial flow, playtesting, world building, and more",
-      "version": "1.0.0",
+      "description": "AI game studio for Roblox — design, build, and playtest games from Claude Code",
+      "version": "2.0.0",
       "source": "./",
       "author": {
         "name": "ckruger0"

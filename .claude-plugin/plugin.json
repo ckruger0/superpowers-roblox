@@ -1,7 +1,7 @@
 {
   "name": "superpowers-roblox",
-  "description": "AI-powered game design analysis skills for Roblox Studio — audits, spatial flow, playtesting, world building, and more",
-  "version": "1.0.0",
+  "description": "AI game studio for Roblox — design, build, and playtest games from Claude Code",
+  "version": "2.0.0",
   "author": {
     "name": "ckruger0"
   },
@@ -11,9 +11,10 @@
   "keywords": [
     "roblox",
     "game-design",
+    "game-studio",
     "skills",
     "mcp",
-    "spatial-analysis",
+    "world-building",
     "playtesting"
   ]
 }
