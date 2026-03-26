@@ -1,0 +1,10 @@
+{
+  "name": "superpowers-roblox",
+  "version": "1.0.0",
+  "description": "AI-powered game design analysis skills for Roblox Studio",
+  "author": {
+    "name": "ckruger0"
+  },
+  "skills": "./skills",
+  "commands": "./.claude/commands"
+}

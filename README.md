@@ -19,19 +19,39 @@ The skills also include world-building tools that search the Creator Store, plac
 | `/add-asset` | Finds and inserts a Creator Store model by description, with placement verification |
 | `/build-scene` | Conversational world builder — decomposes a concept into objects, places them, screenshots, iterates |
 
-## Setup
+## Installation
 
-### 1. Connect Roblox Studio MCP
+### Option A: Install as a Plugin (Recommended)
 
-Enable the built-in MCP server in Roblox Studio:
-1. Open the Assistant chat window
+Install directly into Claude Code from anywhere — no need to clone the repo:
+
+```
+/plugin marketplace add ckruger0/superpowers-roblox
+/plugin install superpowers-roblox
+```
+
+This gives you all six skills and slash commands globally.
+
+### Option B: Clone and Use Locally
+
+Clone the repo and run Claude Code from inside it:
+
+```bash
+git clone https://github.com/ckruger0/superpowers-roblox.git
+cd superpowers-roblox
+claude
+```
+
+### Connect Roblox Studio MCP
+
+Whichever option you chose, you need the Roblox Studio MCP server running:
+
+1. Open the Assistant chat window in Roblox Studio
 2. Click three dots → Assistant Settings
 3. Select MCP Servers tab
 4. Toggle on "Enable Studio as MCP server"
 
-### 2. Configure Claude Code
-
-Add the MCP server to your Claude Code config:
+Then add the MCP server to your Claude Code config:
 
 **macOS:**
 ```json
@@ -44,9 +64,9 @@ Add the MCP server to your Claude Code config:
 }
 ```
 
-### 3. Use the Skills
+### Use the Skills
 
-Open Claude Code in this repo directory, open Roblox Studio with your game, and run any command:
+Open Roblox Studio with your game and run any command:
 
 ```
 /game-design-audit

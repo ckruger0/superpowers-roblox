@@ -1,0 +1,14 @@
+{
+  "name": "superpowers-roblox",
+  "owner": {
+    "name": "ckruger0"
+  },
+  "plugins": [
+    {
+      "name": "superpowers-roblox",
+      "source": ".",
+      "description": "AI-powered game design analysis skills for Roblox Studio — audits, spatial flow, playtesting, world building, and more",
+      "version": "1.0.0"
+    }
+  ]
+}
