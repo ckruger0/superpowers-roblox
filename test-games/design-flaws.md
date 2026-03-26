@@ -6,14 +6,14 @@ This test game is deliberately bad. Each flaw should be caught by one of the gam
 
 | # | Flaw | Should be caught by | How to verify |
 |---|------|---------------------|---------------|
-| 1 | Spawn faces a wall (rotated 180 degrees) | `/spatial-flow` | Spawn orientation report shows player faces wall |
-| 2 | No visual breadcrumb to first platform | `/spatial-flow` | Sightline analysis shows no large objects in spawn direction |
-| 3 | First jump is the hardest (18 studs) | `/playtest-audit` | Difficulty curve shows inverted progression |
-| 4 | Model named "MysteryDoor" with no script | `/spatial-flow` | Affordance trap detection flags it |
-| 5 | No score, collectibles, or reward system | `/game-design-audit` | Core loop rated red, no score/reward scripts found |
-| 6 | All jumps after the first are identical (8 studs) | `/game-design-audit` | Progression rated red, no escalation |
-| 7 | Falling into void has no respawn message | `/playtest-audit` | Player dies with no feedback |
-| 8 | 20-stud flat section with nothing on it | `/playtest-audit` | Pacing dead zone detected |
+| 1 | Spawn faces a wall (rotated 180 degrees) | `/review-layout` | Spawn orientation report shows player faces wall |
+| 2 | No visual breadcrumb to first platform | `/review-layout` | Sightline analysis shows no large objects in spawn direction |
+| 3 | First jump is the hardest (18 studs) | `/playtest` | Difficulty curve shows inverted progression |
+| 4 | Model named "MysteryDoor" with no script | `/review-layout` | Affordance trap detection flags it |
+| 5 | No score, collectibles, or reward system | `/review-game` | Core loop rated red, no score/reward scripts found |
+| 6 | All jumps after the first are identical (8 studs) | `/review-game` | Progression rated red, no escalation |
+| 7 | Falling into void has no respawn message | `/playtest` | Player dies with no feedback |
+| 8 | 20-stud flat section with nothing on it | `/playtest` | Pacing dead zone detected |
 
 ## Build Instructions (Roblox Studio)
 
