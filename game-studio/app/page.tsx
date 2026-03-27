@@ -79,7 +79,7 @@ export default function Home() {
   );
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex flex-col" style={{ backgroundColor: palette.bg }}>
+    <div className="h-screen w-screen overflow-hidden flex flex-col" style={{ backgroundColor: palette.bg }} suppressHydrationWarning>
       {/* Top navbar */}
       <div
         className="h-12 flex-shrink-0 flex items-center justify-between px-5 z-50"
@@ -128,7 +128,7 @@ export default function Home() {
         </div>
 
         {/* Right: studio connection button */}
-        <div className="relative">
+        <div className="relative" suppressHydrationWarning>
           <button
             onClick={() => mcpStatus.connected && setShowSpaces(!showSpaces)}
             className="flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors"
