@@ -5,6 +5,26 @@ import type { GameDesignDoc } from "@/lib/types";
 import { palette } from "@/lib/themes";
 import Markdown from "@/components/shared/Markdown";
 
+const friendlyToolNames: Record<string, string> = {
+  search_game_tree: "Looking around the game...",
+  inspect_instance: "Checking out an object...",
+  script_grep: "Searching through scripts...",
+  script_read: "Reading a script...",
+  execute_luau: "Running some code in Studio...",
+  insert_from_creator_store: "Finding an asset to place...",
+  screen_capture: "Taking a screenshot...",
+  generate_mesh: "Creating a custom 3D object...",
+  start_stop_play: "Toggling play mode...",
+  character_navigation: "Moving the character...",
+  keyboard_input: "Pressing some keys...",
+  mouse_input: "Clicking something...",
+  console_output: "Checking the console...",
+};
+
+function friendlyToolMessage(toolName: string): string {
+  return friendlyToolNames[toolName] ?? `Working on something...`;
+}
+
 interface BuildMessage {
   id: string;
   role: "assistant" | "user" | "system";
@@ -113,17 +133,10 @@ Keep messages concise. Show your work visually.`;
               } else if (eventType === "tool_call") {
                 addMessage({
                   role: "system",
-                  content: `Using ${data.name}...`,
+                  content: friendlyToolMessage(data.name),
                   type: "status",
                 });
 
-                if (data.name === "screen_capture") {
-                  addMessage({
-                    role: "system",
-                    content: "Capturing screenshot...",
-                    type: "status",
-                  });
-                }
               } else if (eventType === "tool_result") {
                 if (data.name === "screen_capture" && data.result) {
                   const result = data.result;
@@ -218,7 +231,7 @@ Keep messages concise. Show your work visually.`;
               const data = JSON.parse(line.slice(6));
               addMessage({
                 role: "system",
-                content: `Using ${data.name}...`,
+                content: friendlyToolMessage(data.name),
                 type: "status",
               });
             } catch {
