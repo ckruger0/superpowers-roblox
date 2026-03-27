@@ -282,8 +282,45 @@ return table.concat(out, "\\n")
 
 If issues > 3, something is seriously wrong. Consider deleting problematic objects and trying different Creator Store searches.
 
-### Step 3: Screenshot + CRITICAL visual review
-Take \`screen_capture\`. Be BRUTALLY HONEST — do NOT say "looks great" unless it actually does. Ask yourself:
+### Step 3: Multi-angle screenshots + CRITICAL visual review
+
+Take 3-4 screenshots from different angles to get a full picture. Before EACH screenshot, reposition the camera via \`execute_luau\`:
+
+**Shot 1 — Bird's eye overview:**
+\`\`\`lua
+local cam = workspace.CurrentCamera
+local spawn = workspace:FindFirstChildWhichIsA("SpawnLocation", true)
+local center = spawn and spawn.Position or Vector3.new(0,0,0)
+cam.CFrame = CFrame.lookAt(center + Vector3.new(0, 80, 60), center)
+return "Camera: bird's eye"
+\`\`\`
+Then \`screen_capture\`.
+
+**Shot 2 — Player perspective from spawn:**
+\`\`\`lua
+local cam = workspace.CurrentCamera
+local spawn = workspace:FindFirstChildWhichIsA("SpawnLocation", true)
+if spawn then
+    cam.CFrame = spawn.CFrame * CFrame.new(0, 5, 0) -- head height
+end
+return "Camera: player POV"
+\`\`\`
+Then \`screen_capture\`.
+
+**Shot 3 — Side angle (shows vertical relationships):**
+\`\`\`lua
+local cam = workspace.CurrentCamera
+local spawn = workspace:FindFirstChildWhichIsA("SpawnLocation", true)
+local center = spawn and spawn.Position or Vector3.new(0,0,0)
+cam.CFrame = CFrame.lookAt(center + Vector3.new(60, 20, 0), center)
+return "Camera: side angle"
+\`\`\`
+Then \`screen_capture\`.
+
+**Shot 4 (optional) — Close-up on newest objects:**
+Position camera near the most recently placed objects to check detail and scale.
+
+After reviewing ALL shots, be BRUTALLY HONEST — do NOT say "looks great" unless it actually does. Ask yourself:
 - Can a player (~5 studs tall) physically WALK through this scene without getting stuck?
 - Is the spawn area CLEAR? (10+ studs of open space around spawn)
 - Are objects the right scale? (A tree should not be the same size as a chair)
