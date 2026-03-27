@@ -51,8 +51,10 @@ export default function BuildChat({ gdd, autoStart, onAutoStartConsumed }: Build
   }, [messages]);
 
   // Auto-start building when navigated from the Ready modal
+  const autoStartedRef = useRef(false);
   useEffect(() => {
-    if (autoStart && !hasStarted && !isBuilding) {
+    if (autoStart && !hasStarted && !isBuilding && !autoStartedRef.current) {
+      autoStartedRef.current = true;
       onAutoStartConsumed?.();
       startBuild();
     }
