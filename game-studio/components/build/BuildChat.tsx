@@ -245,17 +245,17 @@ Keep messages concise. Show your work visually.`;
     gdd.vision.status !== "empty" || gdd.mechanics.status !== "empty";
 
   return (
-    <div className="w-full h-full flex flex-col bg-neutral-950">
+    <div className="w-full h-full flex flex-col bg-[#ece3d5]">
       {/* Chat messages */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto py-6 px-4 space-y-4">
           {!hasStarted && (
             <div className="text-center py-20">
-              <div className="text-neutral-700 text-4xl mb-4">🔨</div>
-              <h2 className="text-neutral-200 text-lg font-semibold mb-2">
+              <div className="text-[#b0a08a] text-4xl mb-4">🔨</div>
+              <h2 className="text-[#3d2e1e] text-lg font-semibold mb-2">
                 Ready to Build
               </h2>
-              <p className="text-neutral-500 text-sm mb-6 max-w-sm mx-auto">
+              <p className="text-[#8a7a60] text-sm mb-6 max-w-sm mx-auto">
                 {hasGdd
                   ? "The AI will build your game step by step in Roblox Studio, showing you screenshots along the way."
                   : "Head to the Ideate tab first to brainstorm your game idea. Once you have a design, come back here to build it."}
@@ -263,7 +263,7 @@ Keep messages concise. Show your work visually.`;
               {hasGdd && (
                 <button
                   onClick={startBuild}
-                  className="px-6 py-2.5 bg-violet-500 hover:bg-violet-400 text-white text-sm font-medium rounded-lg transition-colors"
+                  className="px-6 py-2.5 bg-[#d4a054] hover:bg-[#c89040] text-white text-sm font-medium rounded-lg transition-colors"
                 >
                   Start Building
                 </button>
@@ -275,16 +275,16 @@ Keep messages concise. Show your work visually.`;
             <div key={msg.id}>
               {msg.type === "status" && (
                 <div className="flex items-center gap-2 py-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-                  <span className="text-neutral-500 text-xs">{msg.content}</span>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#d4a054] animate-pulse" />
+                  <span className="text-[#8a7a60] text-xs">{msg.content}</span>
                 </div>
               )}
 
               {msg.type === "text" && msg.role === "assistant" && (
-                <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
-                  <p className="text-neutral-200 text-sm leading-relaxed whitespace-pre-wrap">
+                <div className="bg-[#f5f0ea] border border-[#e8dcc8] rounded-xl p-4">
+                  <p className="text-[#3d2e1e] text-sm leading-relaxed whitespace-pre-wrap">
                     {msg.content || (
-                      <span className="text-neutral-600 animate-pulse">
+                      <span className="text-[#a09070] animate-pulse">
                         Thinking...
                       </span>
                     )}
@@ -294,21 +294,21 @@ Keep messages concise. Show your work visually.`;
 
               {msg.type === "text" && msg.role === "user" && (
                 <div className="flex justify-end">
-                  <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-2 max-w-md">
-                    <p className="text-neutral-200 text-sm">{msg.content}</p>
+                  <div className="bg-[#d4a054]/10 border border-[#d4a054]/30 rounded-xl px-4 py-2 max-w-md">
+                    <p className="text-[#3d2e1e] text-sm">{msg.content}</p>
                   </div>
                 </div>
               )}
 
               {msg.type === "screenshot" && msg.imageUrl && (
-                <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+                <div className="bg-[#f5f0ea] border border-[#e8dcc8] rounded-xl overflow-hidden">
                   <img
                     src={msg.imageUrl}
                     alt="Roblox Studio screenshot"
                     className="w-full rounded-t-xl"
                   />
                   <div className="p-3 flex items-center gap-2">
-                    <span className="text-neutral-500 text-xs">
+                    <span className="text-[#8a7a60] text-xs">
                       Screenshot from Roblox Studio
                     </span>
                   </div>
@@ -323,9 +323,9 @@ Keep messages concise. Show your work visually.`;
 
       {/* Input bar */}
       {hasStarted && (
-        <div className="border-t border-neutral-800 p-4">
+        <div className="border-t border-[#e8dcc8] p-4">
           <div className="max-w-2xl mx-auto">
-            <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 focus-within:border-violet-500/40 transition-colors">
+            <div className="flex items-center gap-2 bg-[#f5f0ea] border border-[#e8dcc8] rounded-xl px-4 py-3 focus-within:border-[#d4a054]/40 transition-colors">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -337,13 +337,13 @@ Keep messages concise. Show your work visually.`;
                     ? "AI is building..."
                     : "Give feedback or say what to change..."
                 }
-                className="flex-1 bg-transparent text-neutral-200 text-sm outline-none placeholder-neutral-600"
+                className="flex-1 bg-transparent text-[#3d2e1e] text-sm outline-none placeholder-neutral-600"
                 disabled={isBuilding}
               />
               <button
                 onClick={() => sendReply(input)}
                 disabled={isBuilding || !input.trim()}
-                className="text-violet-400 hover:text-violet-300 disabled:text-neutral-700 transition-colors"
+                className="text-[#d4a054] hover:text-[#c89040] disabled:text-[#b0a08a] transition-colors"
               >
                 ➤
               </button>
