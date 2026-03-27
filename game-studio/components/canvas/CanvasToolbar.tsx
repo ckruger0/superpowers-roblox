@@ -119,6 +119,8 @@ export default function CanvasToolbar({ editor, activeTool, onImageAdded, theme 
       const pageCenter = editor.screenToPage(center);
       const shapeId = createShapeId();
 
+      // Use the text tool to place it, then set content — matches the style of manual text
+      editor.setCurrentTool("text");
       editor.createShape({
         id: shapeId,
         type: "text",
@@ -134,11 +136,10 @@ export default function CanvasToolbar({ editor, activeTool, onImageAdded, theme 
               },
             ],
           },
-          color: "white",
-          size: "m",
           autoSize: true,
         },
       });
+      editor.setCurrentTool("select");
     };
 
     recognition.onerror = () => setIsListening(false);
