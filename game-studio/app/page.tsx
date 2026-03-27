@@ -130,7 +130,7 @@ export default function Home() {
         <div
           suppressHydrationWarning
           className="relative flex items-center gap-1.5 cursor-default"
-          onMouseEnter={() => studioSpaces.length > 0 && setShowSpaces(true)}
+          onMouseEnter={() => mcpStatus.connected && setShowSpaces(true)}
           onMouseLeave={() => setShowSpaces(false)}
         >
           <div
@@ -142,7 +142,7 @@ export default function Home() {
           </span>
 
           {/* Spaces hover popover */}
-          {showSpaces && studioSpaces.length > 0 && (
+          {showSpaces && mcpStatus.connected && (
             <div
               className="absolute top-full right-0 mt-2 rounded-lg shadow-lg py-1.5 min-w-[200px] z-50"
               style={{ backgroundColor: palette.bgCard, border: `1px solid ${palette.borderLight}` }}
@@ -152,18 +152,22 @@ export default function Home() {
                   Open Spaces
                 </span>
               </div>
-              {studioSpaces.map((space) => (
-                <button
-                  key={space.id}
-                  className="w-full px-3 py-1.5 text-left text-xs transition-colors flex items-center gap-2"
-                  style={{ color: palette.textSecondary }}
-                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = palette.bgCardHover)}
-                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-                >
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: palette.success }} />
-                  {space.name}
-                </button>
-              ))}
+              {studioSpaces.length > 0 ? (
+                studioSpaces.map((space) => (
+                  <div
+                    key={space.id}
+                    className="px-3 py-1.5 text-xs flex items-center gap-2"
+                    style={{ color: palette.textSecondary }}
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: palette.success }} />
+                    {space.name}
+                  </div>
+                ))
+              ) : (
+                <div className="px-3 py-1.5 text-xs" style={{ color: palette.textFaint }}>
+                  Loading...
+                </div>
+              )}
             </div>
           )}
         </div>
