@@ -286,17 +286,29 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd, theme }:
         triggerDesc = `The user replied: "${replyText}"`;
       }
 
-      // Build GDD context
-      const gddSections: string[] = [];
+      // Build GDD context with explicit gap analysis
+      const gddFilled: string[] = [];
+      const gddMissing: string[] = [];
       if (gdd) {
-        if (gdd.vision.content) gddSections.push(`Vision (${gdd.vision.status}): ${gdd.vision.content}`);
-        if (gdd.mechanics.content) gddSections.push(`Mechanics (${gdd.mechanics.status}): ${gdd.mechanics.content}`);
-        if (gdd.narrative.content) gddSections.push(`Narrative (${gdd.narrative.status}): ${gdd.narrative.content}`);
-        if (gdd.levelPlan.content) gddSections.push(`Level Plan (${gdd.levelPlan.status}): ${gdd.levelPlan.content}`);
+        if (gdd.vision.content) gddFilled.push(`Vision (${gdd.vision.status}): ${gdd.vision.content}`);
+        else gddMissing.push("vision (game type + vibe + setting)");
+        if (gdd.mechanics.content) gddFilled.push(`Mechanics (${gdd.mechanics.status}): ${gdd.mechanics.content}`);
+        else gddMissing.push("mechanics (what the player DOES)");
+        if (gdd.narrative.content) gddFilled.push(`Narrative (${gdd.narrative.status}): ${gdd.narrative.content}`);
+        else gddMissing.push("narrative (why the player cares)");
+        if (gdd.levelPlan.content) gddFilled.push(`Level Plan (${gdd.levelPlan.status}): ${gdd.levelPlan.content}`);
+        else gddMissing.push("levelPlan (rough section order + difficulty)");
+      } else {
+        gddMissing.push("vision", "mechanics", "narrative", "levelPlan");
       }
-      const gddContext = gddSections.length > 0
-        ? `\n## What We've Decided So Far (Game Design Doc)\n${gddSections.join("\n")}`
-        : "\n## Game Design Doc\nNothing decided yet — we're still exploring.";
+
+      const gddContext = gddFilled.length > 0
+        ? `\n## What We've Decided So Far\n${gddFilled.join("\n")}`
+        : "\n## Game Design Doc\nNothing decided yet.";
+
+      const gddGaps = gddMissing.length > 0
+        ? `\n## GDD Sections Still Missing\n${gddMissing.map(s => `- ${s}`).join("\n")}\n\n${gddMissing.length <= 1 ? "Almost done! One more section and we can start building." : `${4 - gddMissing.length}/4 sections filled. Keep moving — steer toward the missing sections.`}`
+        : "\n## GDD Status: COMPLETE\nAll 4 sections filled! Suggest moving to the Create tab to start building.";
 
       const systemPrompt = `You are an AI creative director helping a kid design a Roblox game. You live on their creative canvas — they dump ideas (text, images, drawings) and you connect the dots into a game concept.
 
@@ -309,19 +321,30 @@ You are watching a shared creative space in real time. Every time something new 
 ## Canvas Right Now
 ${canvasPrompt}
 ${gddContext}
+${gddGaps}
 
 ## Conversation History
 ${conversationRef.current.map((m) => `${m.role === "user" ? "Kid" : "You"}: ${m.content}`).join("\n") || "(First interaction — welcome them!)"}
 
 ## Rules
-- ULTRA SHORT messages: one sentence max, ideally under 10 words. You're a tiny bubble on a canvas. "A volcano obby?" or "Should the lava rise?" — that short.
-- CONNECT THE DOTS: When you see a new item, relate it to existing items. "Oh! The volcano picture + 'lava obby' — you want a lava obby INSIDE a volcano?"
+- ULTRA SHORT messages: one sentence max, ideally under 10 words. You're a tiny bubble on a canvas.
+- CONNECT THE DOTS: When you see a new item, relate it to existing items.
 - Reference specific canvas items by quoting their text or describing images.
 - 2-3 quick reply buttons that move design forward. Make them specific, not generic.
 - ONE question at a time. Never ask two things.
-- When enough context exists for a GDD section, include a gddUpdate to fill it in.
 - Be genuinely excited — you're building a game with a kid!
 - If this is the first interaction, react to what's on the canvas with enthusiasm and ask what they have in mind.
+
+## CRITICAL: Speed to V1
+Your goal is to fill ALL 4 GDD sections within 4-5 interactions so the build agent can start. Do NOT deep-dive into one section — go WIDE first.
+
+Strategy:
+- Once you have enough for a GDD section (even rough), FILL IT IN as "drafting" and move on to the NEXT MISSING section.
+- Don't ask for perfection — "good enough to build a V1" is the bar.
+- If vision and mechanics are filled, your next question MUST be about narrative or levelPlan (whichever is missing).
+- When a user gives you ANY useful info, immediately try to fill the relevant GDD section. Don't wait for explicit confirmation on obvious things.
+- Use "drafting" status aggressively. Lock later.
+- When all 4 are filled, say "Ready to build! Head to Create tab" — don't keep drilling.
 
 ## When to Update the Game Design Doc
 - "vision": When you understand the core idea (game type + vibe + setting)
