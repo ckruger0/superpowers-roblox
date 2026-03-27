@@ -39,6 +39,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("ideate");
   const [showAbout, setShowAbout] = useState(false);
   const [studioSpaces, setStudioSpaces] = useState<Array<{ name: string; id: string }>>([]);
+  const [selectedSpace, setSelectedSpace] = useState<string | null>(null);
   const [showSpaces, setShowSpaces] = useState(false);
 
   useEffect(() => {
@@ -126,49 +127,76 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Right: studio connection with hover popover */}
-        <div
-          suppressHydrationWarning
-          className="relative flex items-center gap-1.5 cursor-default"
-          onMouseEnter={() => mcpStatus.connected && setShowSpaces(true)}
-          onMouseLeave={() => setShowSpaces(false)}
-        >
-          <div
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: mcpStatus.connected ? palette.success : palette.textFaint }}
-          />
-          <span className="text-xs" style={{ color: palette.textMuted }}>
-            {mcpStatus.connected ? "Studio Connected" : "No Studio"}
-          </span>
-
-          {/* Spaces hover popover */}
-          {showSpaces && mcpStatus.connected && (
+        {/* Right: studio connection button */}
+        <div className="relative">
+          <button
+            onClick={() => mcpStatus.connected && setShowSpaces(!showSpaces)}
+            className="flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors"
+            style={{
+              color: palette.textMuted,
+              backgroundColor: showSpaces ? palette.bgCardHover : "transparent",
+            }}
+          >
             <div
-              className="absolute top-full right-0 mt-2 rounded-lg shadow-lg py-1.5 min-w-[200px] z-50"
-              style={{ backgroundColor: palette.bgCard, border: `1px solid ${palette.borderLight}` }}
-            >
-              <div className="px-3 py-1">
-                <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: palette.textFaint }}>
-                  Open Spaces
-                </span>
-              </div>
-              {studioSpaces.length > 0 ? (
-                studioSpaces.map((space) => (
-                  <div
-                    key={space.id}
-                    className="px-3 py-1.5 text-xs flex items-center gap-2"
-                    style={{ color: palette.textSecondary }}
-                  >
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: palette.success }} />
-                    {space.name}
-                  </div>
-                ))
-              ) : (
-                <div className="px-3 py-1.5 text-xs" style={{ color: palette.textFaint }}>
-                  Loading...
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: mcpStatus.connected ? palette.success : palette.textFaint }}
+            />
+            <span className="text-xs">
+              {mcpStatus.connected ? "Studio Connected" : "No Studio"}
+            </span>
+            {mcpStatus.connected && (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            )}
+          </button>
+
+          {showSpaces && (
+            <>
+              {/* Backdrop to close on click outside */}
+              <div className="fixed inset-0 z-40" onClick={() => setShowSpaces(false)} />
+              <div
+                className="absolute top-full right-0 mt-1 rounded-lg shadow-lg py-2 min-w-[240px] z-50"
+                style={{ backgroundColor: palette.bgCard, border: `1px solid ${palette.borderLight}` }}
+              >
+                <div className="px-3 py-1 mb-1">
+                  <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: palette.textFaint }}>
+                    Open Spaces
+                  </span>
                 </div>
-              )}
-            </div>
+                {studioSpaces.length > 0 ? (
+                  studioSpaces.map((space) => (
+                    <button
+                      key={space.id}
+                      onClick={() => {
+                        setSelectedSpace(space.id);
+                        setShowSpaces(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-xs flex items-center gap-2.5 transition-colors"
+                      style={{ color: palette.textSecondary }}
+                      onMouseOver={(e) => (e.currentTarget.style.backgroundColor = palette.bgCardHover)}
+                      onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                    >
+                      <div
+                        className="w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                        style={{
+                          borderColor: (selectedSpace ?? studioSpaces[0]?.id) === space.id ? palette.accent : palette.border,
+                        }}
+                      >
+                        {(selectedSpace ?? studioSpaces[0]?.id) === space.id && (
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: palette.accent }} />
+                        )}
+                      </div>
+                      <span>{space.name}</span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-3 py-2 text-xs" style={{ color: palette.textFaint }}>
+                    Loading spaces...
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
