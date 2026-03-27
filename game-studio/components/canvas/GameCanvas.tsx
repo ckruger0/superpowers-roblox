@@ -5,7 +5,7 @@ import { Tldraw, Editor, TLShapeId, TLComponents } from "tldraw";
 import "tldraw/tldraw.css";
 import AIBubble, { QuickReply } from "./AIBubble";
 import CanvasToolbar from "./CanvasToolbar";
-import { extractCanvasContext, extractCanvasContextWithDrawings, buildCanvasPrompt } from "@/lib/canvas-context";
+import { extractCanvasContext, extractCanvasContextWithDrawings, buildCanvasPrompt, type CanvasItem } from "@/lib/canvas-context";
 import type { GameDesignDoc } from "@/lib/types";
 import type { Theme } from "@/lib/themes";
 
@@ -92,13 +92,19 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd, theme }:
     [editor]
   );
 
+  // Pre-captured drawing data — filled during debounce period
+  const precapturedItemsRef = useRef<CanvasItem[] | null>(null);
+
   const askAI = useCallback(
     async (triggerItemId?: string, replyText?: string) => {
       if (!editor || isThinking) return;
       setIsThinking(true);
 
-      // Use async extraction to capture drawings as images
-      const items = await extractCanvasContextWithDrawings(editor);
+      // Use pre-captured items if available (drawing was captured during debounce),
+      // otherwise do a fast sync extraction
+      const items = precapturedItemsRef.current ?? extractCanvasContext(editor);
+      precapturedItemsRef.current = null;
+
       if (items.length === 0 && !replyText) {
         setIsThinking(false);
         return;
@@ -315,6 +321,12 @@ IMPORTANT: Respond with valid JSON only:
         if (selectedIds.length === 0 && pendingTriggerRef.current) {
           const triggerId = pendingTriggerRef.current;
           pendingTriggerRef.current = null;
+
+          // Start capturing drawings immediately (runs during debounce)
+          extractCanvasContextWithDrawings(editor).then((items) => {
+            precapturedItemsRef.current = items;
+          });
+
           if (debounceRef.current) clearTimeout(debounceRef.current);
           debounceRef.current = setTimeout(() => {
             askAI(triggerId);

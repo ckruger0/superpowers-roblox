@@ -125,11 +125,11 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Content area */}
+      {/* Content area — canvas stays mounted (hidden) to preserve state */}
       <div className="flex-1 overflow-hidden relative">
-        {activeTab === "ideate" && (
+        <div className={`absolute inset-0 ${activeTab === "ideate" ? "" : "hidden"}`}>
           <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} theme={theme} />
-        )}
+        </div>
 
         {activeTab === "design" && (
           <GDDFullView gdd={gdd} onUpdate={handleGddUpdate} />
