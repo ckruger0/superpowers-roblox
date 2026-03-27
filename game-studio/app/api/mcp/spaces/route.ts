@@ -7,22 +7,25 @@ export async function GET() {
   }
 
   try {
-    // Query the game tree root to get the place name
-    const result = await callMcpTool("search_game_tree", {
-      query: "*",
-      path: "game",
-      depth: 1,
+    const result = await callMcpTool("execute_luau", {
+      code: `return game.Name .. " (PlaceId: " .. tostring(game.PlaceId) .. ")"`,
     });
 
-    // Try to extract place info from the result
-    const resultStr = typeof result === "string" ? result : JSON.stringify(result);
+    // Extract the text from the MCP result
+    let placeName = "Roblox Studio";
+    if (result && typeof result === "object") {
+      const r = result as { content?: Array<{ text?: string }> };
+      if (r.content?.[0]?.text) {
+        placeName = r.content[0].text;
+      }
+    } else if (typeof result === "string") {
+      placeName = result;
+    }
 
-    return Response.json({ spaces: [{ name: resultStr || "Roblox Studio", id: "default" }] });
-  } catch (error) {
-    // If the tool call fails, just return a generic entry
+    return Response.json({ spaces: [{ name: placeName, id: "default" }] });
+  } catch {
     return Response.json({
       spaces: [{ name: "Roblox Studio", id: "default" }],
-      error: error instanceof Error ? error.message : "Unknown error",
     });
   }
 }
