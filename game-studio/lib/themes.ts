@@ -1,112 +1,80 @@
+// Single unified palette — warm parchment base, lavender accent
+export const palette = {
+  // Backgrounds
+  bg: "#ece5dd",
+  bgCard: "#f5f0eb",
+  bgCardHover: "#ebe3da",
+  bgInput: "#f5f0eb",
+
+  // Borders
+  border: "#e0d5c9",
+  borderLight: "#e8dfd6",
+  borderDashed: "#cfc2b4",
+
+  // Text
+  textPrimary: "#3d2e1e",
+  textSecondary: "#5c4f3d",
+  textMuted: "#8a7d6b",
+  textFaint: "#b0a48e",
+
+  // Accent (lavender)
+  accent: "#c5a3d9",
+  accentDark: "#8b6baa",
+  accentBg: "#e8daf0",
+  accentText: "#6b4d8a",
+
+  // Status
+  success: "#7bb89a",
+  successBg: "#d4e8de",
+  successText: "#3d6b55",
+
+  // Section colors (for GDD cards)
+  rose: { text: "#b44d6e", bg: "#fdf2f5", border: "#f0d0da" },
+  emerald: { text: "#3d7a5c", bg: "#f0f8f4", border: "#c8e4d4" },
+  amber: { text: "#8b6520", bg: "#fdf8f0", border: "#f0dfc4" },
+  sky: { text: "#2d6a8a", bg: "#f0f7fb", border: "#c4dff0" },
+};
+
+// Re-export Tab type for backwards compat
 export type Tab = "ideate" | "design" | "create";
 
+// Theme object for components that still reference it
 export interface Theme {
-  // Navbar
-  navBg: string;
-  navBorder: string;
-  navText: string;
-
-  // Active tab pill
-  tabActiveBg: string;
-  tabActiveText: string;
-  tabInactiveText: string;
-
-  // Toolbar
   toolbarBg: string;
   toolbarBorder: string;
   toolbarActiveBtn: string;
   toolbarText: string;
   toolbarHover: string;
-
-  // AI bubble
+  thinkingColor: string;
   bubbleBg: string;
   bubbleBorder: string;
   bubbleAccent: string;
   bubbleBtnBg: string;
   bubbleBtnBorder: string;
   bubbleBtnHover: string;
-
-  // Status dot
-  thinkingColor: string;
-
-  // Canvas background (tldraw CSS override)
   canvasBg: string;
 }
 
+// Single theme used everywhere
+export const theme: Theme = {
+  toolbarBg: `bg-[${palette.bgCard}]`,
+  toolbarBorder: `border-[${palette.borderLight}]`,
+  toolbarActiveBtn: `bg-[${palette.accent}] text-white`,
+  toolbarText: `text-[${palette.textMuted}]`,
+  toolbarHover: `hover:text-[${palette.textSecondary}] hover:bg-[${palette.bgCardHover}]`,
+  thinkingColor: `bg-[${palette.accent}]`,
+  bubbleBg: `bg-[${palette.bgCard}]`,
+  bubbleBorder: `border-[${palette.borderLight}]`,
+  bubbleAccent: `text-[${palette.accentDark}]`,
+  bubbleBtnBg: `bg-[${palette.bgCardHover}]`,
+  bubbleBtnBorder: `border-[${palette.border}]`,
+  bubbleBtnHover: `hover:bg-[${palette.accentBg}] hover:border-[${palette.accent}] hover:text-[${palette.accentText}]`,
+  canvasBg: palette.bg,
+};
+
+// Keep themes export for any code that still references it
 export const themes: Record<Tab, Theme> = {
-  ideate: {
-    navBg: "bg-[#f5f0eb]",
-    navBorder: "border-[#e8dfd6]",
-    navText: "text-[#5c4f3d]",
-
-    tabActiveBg: "bg-[#e8daf0]",
-    tabActiveText: "text-[#6b4d8a]",
-    tabInactiveText: "text-[#a8977e]",
-
-    toolbarBg: "bg-[#f5f0eb]",
-    toolbarBorder: "border-[#e8dfd6]",
-    toolbarActiveBtn: "bg-[#c5a3d9] text-white",
-    toolbarText: "text-[#8a7d6b]",
-    toolbarHover: "hover:text-[#5c4f3d] hover:bg-[#ebe3da]",
-
-    bubbleBg: "bg-[#faf7f4]",
-    bubbleBorder: "border-[#e8dfd6]",
-    bubbleAccent: "text-[#8b6baa]",
-    bubbleBtnBg: "bg-[#f0eae4]",
-    bubbleBtnBorder: "border-[#e0d5c9]",
-    bubbleBtnHover: "hover:bg-[#e8daf0] hover:border-[#c5a3d9] hover:text-[#6b4d8a]",
-
-    thinkingColor: "bg-[#c5a3d9]",
-    canvasBg: "#ece5dd",
-  },
-  design: {
-    navBg: "bg-[#eef3f0]",
-    navBorder: "border-[#d6e3dc]",
-    navText: "text-[#3d5c4f]",
-
-    tabActiveBg: "bg-[#d4e8de]",
-    tabActiveText: "text-[#3d6b55]",
-    tabInactiveText: "text-[#8aaa97]",
-
-    toolbarBg: "bg-[#eef3f0]",
-    toolbarBorder: "border-[#d6e3dc]",
-    toolbarActiveBtn: "bg-[#7bb89a] text-white",
-    toolbarText: "text-[#6b8a7d]",
-    toolbarHover: "hover:text-[#3d5c4f] hover:bg-[#dfe9e3]",
-
-    bubbleBg: "bg-[#f4faf7]",
-    bubbleBorder: "border-[#d6e3dc]",
-    bubbleAccent: "text-[#4a8b6b]",
-    bubbleBtnBg: "bg-[#e4f0ea]",
-    bubbleBtnBorder: "border-[#c9e0d5]",
-    bubbleBtnHover: "hover:bg-[#d4e8de] hover:border-[#7bb89a] hover:text-[#3d6b55]",
-
-    thinkingColor: "bg-[#7bb89a]",
-    canvasBg: "#dde6e0",
-  },
-  create: {
-    navBg: "bg-[#f5f0ea]",
-    navBorder: "border-[#e8dcc8]",
-    navText: "text-[#5c4a30]",
-
-    tabActiveBg: "bg-[#f0dfc4]",
-    tabActiveText: "text-[#8b6520]",
-    tabInactiveText: "text-[#b0a08a]",
-
-    toolbarBg: "bg-[#f5f0ea]",
-    toolbarBorder: "border-[#e8dcc8]",
-    toolbarActiveBtn: "bg-[#d4a054] text-white",
-    toolbarText: "text-[#8a7a60]",
-    toolbarHover: "hover:text-[#5c4a30] hover:bg-[#ebe0d0]",
-
-    bubbleBg: "bg-[#faf7f2]",
-    bubbleBorder: "border-[#e8dcc8]",
-    bubbleAccent: "text-[#a07030]",
-    bubbleBtnBg: "bg-[#f0e8da]",
-    bubbleBtnBorder: "border-[#e0d0b8]",
-    bubbleBtnHover: "hover:bg-[#f0dfc4] hover:border-[#d4a054] hover:text-[#8b6520]",
-
-    thinkingColor: "bg-[#d4a054]",
-    canvasBg: "#ece3d5",
-  },
+  ideate: theme,
+  design: theme,
+  create: theme,
 };

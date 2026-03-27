@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import type { GameDesignDoc } from "@/lib/types";
+import { palette } from "@/lib/themes";
 
 interface BuildMessage {
   id: string;
@@ -9,7 +10,6 @@ interface BuildMessage {
   content: string;
   type: "text" | "screenshot" | "approval" | "status";
   imageUrl?: string;
-  approvalButtons?: { label: string; value: string }[];
 }
 
 interface BuildChatProps {
@@ -41,7 +41,6 @@ export default function BuildChat({ gdd }: BuildChatProps) {
       type: "status",
     });
 
-    // Build the GDD summary for the AI
     const gddSummary = [
       gdd.vision.content && `Vision: ${gdd.vision.content}`,
       gdd.mechanics.content && `Mechanics: ${gdd.mechanics.content}`,
@@ -117,7 +116,6 @@ Keep messages concise. Show your work visually.`;
                   type: "status",
                 });
 
-                // If it's a screenshot, we'll get the result next
                 if (data.name === "screen_capture") {
                   addMessage({
                     role: "system",
@@ -126,10 +124,8 @@ Keep messages concise. Show your work visually.`;
                   });
                 }
               } else if (eventType === "tool_result") {
-                // Check if this is a screenshot result
                 if (data.name === "screen_capture" && data.result) {
                   const resultStr = typeof data.result === "string" ? data.result : JSON.stringify(data.result);
-                  // Look for base64 image data in the result
                   const imageMatch = resultStr.match(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/);
                   if (imageMatch) {
                     addMessage({
@@ -245,17 +241,17 @@ Keep messages concise. Show your work visually.`;
     gdd.vision.status !== "empty" || gdd.mechanics.status !== "empty";
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#ece3d5]">
+    <div className="w-full h-full flex flex-col" style={{ backgroundColor: palette.bg }}>
       {/* Chat messages */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto py-6 px-4 space-y-4">
           {!hasStarted && (
             <div className="text-center py-20">
-              <div className="text-[#b0a08a] text-4xl mb-4">🔨</div>
-              <h2 className="text-[#3d2e1e] text-lg font-semibold mb-2">
+              <div className="text-4xl mb-4 opacity-30">🔨</div>
+              <h2 className="text-lg font-semibold mb-2" style={{ color: palette.textPrimary }}>
                 Ready to Build
               </h2>
-              <p className="text-[#8a7a60] text-sm mb-6 max-w-sm mx-auto">
+              <p className="text-sm mb-6 max-w-sm mx-auto" style={{ color: palette.textMuted }}>
                 {hasGdd
                   ? "The AI will build your game step by step in Roblox Studio, showing you screenshots along the way."
                   : "Head to the Ideate tab first to brainstorm your game idea. Once you have a design, come back here to build it."}
@@ -263,7 +259,8 @@ Keep messages concise. Show your work visually.`;
               {hasGdd && (
                 <button
                   onClick={startBuild}
-                  className="px-6 py-2.5 bg-[#d4a054] hover:bg-[#c89040] text-white text-sm font-medium rounded-lg transition-colors"
+                  className="px-6 py-2.5 text-white text-sm font-medium rounded-lg transition-colors"
+                  style={{ backgroundColor: palette.accent }}
                 >
                   Start Building
                 </button>
@@ -275,16 +272,19 @@ Keep messages concise. Show your work visually.`;
             <div key={msg.id}>
               {msg.type === "status" && (
                 <div className="flex items-center gap-2 py-1">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#d4a054] animate-pulse" />
-                  <span className="text-[#8a7a60] text-xs">{msg.content}</span>
+                  <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: palette.accent }} />
+                  <span className="text-xs" style={{ color: palette.textFaint }}>{msg.content}</span>
                 </div>
               )}
 
               {msg.type === "text" && msg.role === "assistant" && (
-                <div className="bg-[#f5f0ea] border border-[#e8dcc8] rounded-xl p-4">
-                  <p className="text-[#3d2e1e] text-sm leading-relaxed whitespace-pre-wrap">
+                <div
+                  className="rounded-xl p-4"
+                  style={{ backgroundColor: palette.bgCard, border: `1px solid ${palette.borderLight}` }}
+                >
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: palette.textPrimary }}>
                     {msg.content || (
-                      <span className="text-[#a09070] animate-pulse">
+                      <span className="animate-pulse" style={{ color: palette.textFaint }}>
                         Thinking...
                       </span>
                     )}
@@ -294,21 +294,27 @@ Keep messages concise. Show your work visually.`;
 
               {msg.type === "text" && msg.role === "user" && (
                 <div className="flex justify-end">
-                  <div className="bg-[#d4a054]/10 border border-[#d4a054]/30 rounded-xl px-4 py-2 max-w-md">
-                    <p className="text-[#3d2e1e] text-sm">{msg.content}</p>
+                  <div
+                    className="rounded-xl px-4 py-2 max-w-md"
+                    style={{ backgroundColor: palette.accentBg, border: `1px solid ${palette.accent}40` }}
+                  >
+                    <p className="text-sm" style={{ color: palette.accentText }}>{msg.content}</p>
                   </div>
                 </div>
               )}
 
               {msg.type === "screenshot" && msg.imageUrl && (
-                <div className="bg-[#f5f0ea] border border-[#e8dcc8] rounded-xl overflow-hidden">
+                <div
+                  className="rounded-xl overflow-hidden"
+                  style={{ border: `1px solid ${palette.borderLight}` }}
+                >
                   <img
                     src={msg.imageUrl}
                     alt="Roblox Studio screenshot"
-                    className="w-full rounded-t-xl"
+                    className="w-full"
                   />
-                  <div className="p-3 flex items-center gap-2">
-                    <span className="text-[#8a7a60] text-xs">
+                  <div className="p-3" style={{ backgroundColor: palette.bgCard }}>
+                    <span className="text-xs" style={{ color: palette.textFaint }}>
                       Screenshot from Roblox Studio
                     </span>
                   </div>
@@ -323,9 +329,12 @@ Keep messages concise. Show your work visually.`;
 
       {/* Input bar */}
       {hasStarted && (
-        <div className="border-t border-[#e8dcc8] p-4">
+        <div className="p-4" style={{ borderTop: `1px solid ${palette.borderLight}` }}>
           <div className="max-w-2xl mx-auto">
-            <div className="flex items-center gap-2 bg-[#f5f0ea] border border-[#e8dcc8] rounded-xl px-4 py-3 focus-within:border-[#d4a054]/40 transition-colors">
+            <div
+              className="flex items-center gap-2 rounded-xl px-4 py-3 transition-colors"
+              style={{ backgroundColor: palette.bgCard, border: `1px solid ${palette.borderLight}` }}
+            >
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -337,13 +346,15 @@ Keep messages concise. Show your work visually.`;
                     ? "AI is building..."
                     : "Give feedback or say what to change..."
                 }
-                className="flex-1 bg-transparent text-[#3d2e1e] text-sm outline-none placeholder-neutral-600"
+                className="flex-1 bg-transparent text-sm outline-none"
+                style={{ color: palette.textPrimary }}
                 disabled={isBuilding}
               />
               <button
                 onClick={() => sendReply(input)}
                 disabled={isBuilding || !input.trim()}
-                className="text-[#d4a054] hover:text-[#c89040] disabled:text-[#b0a08a] transition-colors"
+                className="transition-colors"
+                style={{ color: !input.trim() || isBuilding ? palette.textFaint : palette.accentDark }}
               >
                 ➤
               </button>

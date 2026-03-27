@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import GDDFullView from "@/components/gdd/GDDFullView";
 import BuildChat from "@/components/build/BuildChat";
 import type { GameDesignDoc, McpStatus } from "@/lib/types";
-import { themes, type Tab } from "@/lib/themes";
+import { theme, palette, type Tab } from "@/lib/themes";
 
 function emptyGDD(): GameDesignDoc {
   const emptySection = (title: string, accent: string) => ({
@@ -27,8 +27,8 @@ function emptyGDD(): GameDesignDoc {
 const GameCanvas = dynamic(() => import("@/components/canvas/GameCanvas"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-[#ece5dd] flex items-center justify-center">
-      <span className="text-[#8a7d6b] text-sm">Loading canvas...</span>
+    <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: palette.bg }}>
+      <span style={{ color: palette.textMuted }} className="text-sm">Loading canvas...</span>
     </div>
   ),
 });
@@ -38,8 +38,6 @@ export default function Home() {
   const [mcpStatus, setMcpStatus] = useState<McpStatus>({ connected: false });
   const [activeTab, setActiveTab] = useState<Tab>("ideate");
   const [showAbout, setShowAbout] = useState(false);
-
-  const theme = themes[activeTab];
 
   useEffect(() => {
     fetch("/api/mcp/status")
@@ -67,18 +65,22 @@ export default function Home() {
   );
 
   return (
-    <div className="h-screen w-screen bg-[#ece5dd] overflow-hidden flex flex-col transition-colors duration-300">
+    <div className="h-screen w-screen overflow-hidden flex flex-col" style={{ backgroundColor: palette.bg }}>
       {/* Top navbar */}
-      <div className={`h-12 flex-shrink-0 ${theme.navBg} border-b ${theme.navBorder} flex items-center justify-between px-5 z-50 transition-colors duration-300`}>
+      <div
+        className="h-12 flex-shrink-0 flex items-center justify-between px-5 z-50"
+        style={{ backgroundColor: palette.bgCard, borderBottom: `1px solid ${palette.borderLight}` }}
+      >
         {/* Left: project name */}
         <div className="flex items-center gap-2">
           <img src="/pepe_silvia_logo.png" alt="Pepe Silvia" className="h-6 w-auto" />
-          <span className={`${theme.navText} font-semibold text-sm tracking-tight`}>
+          <span className="font-semibold text-sm tracking-tight" style={{ color: palette.textPrimary }}>
             Pepe Silvia
           </span>
           <button
             onClick={() => setShowAbout(true)}
-            className={`${theme.tabInactiveText} hover:${theme.navText} transition-colors opacity-60 hover:opacity-100`}
+            className="opacity-40 hover:opacity-70 transition-opacity"
+            style={{ color: palette.textMuted }}
             title="What is this?"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -90,34 +92,34 @@ export default function Home() {
         </div>
 
         {/* Center: tab switcher */}
-        <div className="flex items-center gap-0.5 bg-black/5 rounded-lg p-0.5">
-          {(["ideate", "design", "create"] as const).map((tab) => {
-            const isActive = activeTab === tab;
-            const t = themes[tab];
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-1 rounded-md text-xs font-medium capitalize transition-all duration-200 ${
-                  isActive
-                    ? `${t.tabActiveBg} ${t.tabActiveText} shadow-sm`
-                    : `${theme.tabInactiveText} hover:bg-black/5`
-                }`}
-              >
-                {tab}
-              </button>
-            );
-          })}
+        <div className="flex items-center gap-1">
+          {(["ideate", "design", "create"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className="px-4 py-1 text-xs font-medium capitalize transition-all relative"
+              style={{
+                color: activeTab === tab ? palette.textPrimary : palette.textFaint,
+              }}
+            >
+              {tab}
+              {activeTab === tab && (
+                <div
+                  className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-0.5 rounded-full"
+                  style={{ backgroundColor: palette.accent }}
+                />
+              )}
+            </button>
+          ))}
         </div>
 
         {/* Right: studio connection */}
         <div className="flex items-center gap-1.5">
           <div
-            className={`w-2 h-2 rounded-full ${
-              mcpStatus.connected ? "bg-emerald-400" : "bg-neutral-400"
-            }`}
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: mcpStatus.connected ? palette.success : palette.textFaint }}
           />
-          <span className={`${theme.tabInactiveText} text-xs`}>
+          <span className="text-xs" style={{ color: palette.textMuted }}>
             {mcpStatus.connected ? "Studio Connected" : "No Studio"}
           </span>
         </div>
@@ -126,7 +128,7 @@ export default function Home() {
       {/* Content area */}
       <div className="flex-1 overflow-hidden relative">
         {activeTab === "ideate" && (
-          <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} theme={themes[activeTab]} />
+          <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} theme={theme} />
         )}
 
         {activeTab === "design" && (
@@ -141,11 +143,13 @@ export default function Home() {
       {/* About modal */}
       {showAbout && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm"
+          style={{ backgroundColor: "rgba(60, 46, 30, 0.3)" }}
           onClick={() => setShowAbout(false)}
         >
           <div
-            className="bg-[#faf7f4] border border-[#e8dfd6] rounded-2xl max-w-lg w-full mx-4 overflow-hidden shadow-2xl"
+            className="rounded-2xl max-w-lg w-full mx-4 overflow-hidden shadow-2xl"
+            style={{ backgroundColor: palette.bgCard, border: `1px solid ${palette.borderLight}` }}
             onClick={(e) => e.stopPropagation()}
           >
             <img
@@ -154,24 +158,28 @@ export default function Home() {
               className="w-full"
             />
             <div className="p-6">
-              <h2 className="text-[#3d2e1e] font-bold text-lg mb-2">
+              <h2 className="font-bold text-lg mb-2" style={{ color: palette.textPrimary }}>
                 What is Pepe Silvia?
               </h2>
-              <p className="text-[#5c4f3d] text-sm leading-relaxed mb-3">
+              <p className="text-sm leading-relaxed mb-3" style={{ color: palette.textSecondary }}>
                 You know that scene in It{"'"}s Always Sunny where Charlie is connecting
                 all the dots on the wall with red string? That{"'"}s this tool.
               </p>
-              <p className="text-[#8a7d6b] text-sm leading-relaxed mb-3">
+              <p className="text-sm leading-relaxed mb-3" style={{ color: palette.textMuted }}>
                 Throw your ideas at the canvas — images, notes, sketches, vibes, whatever.
                 The AI watches everything and connects the dots into a real game design.
                 Once the design is solid, an AI agent swarm builds it in Roblox Studio.
               </p>
-              <p className="text-[#a89880] text-xs">
+              <p className="text-xs" style={{ color: palette.textFaint }}>
                 Ideate → Design → Create. From chaos to game.
               </p>
               <button
                 onClick={() => setShowAbout(false)}
-                className="mt-4 w-full py-2 bg-[#e8dfd6] hover:bg-[#ddd2c5] text-[#5c4f3d] text-sm rounded-lg transition-colors font-medium"
+                className="mt-4 w-full py-2 text-sm rounded-lg font-medium transition-colors"
+                style={{
+                  backgroundColor: palette.bgCardHover,
+                  color: palette.textSecondary,
+                }}
               >
                 Got it
               </button>
