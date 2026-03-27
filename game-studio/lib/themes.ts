@@ -28,6 +28,9 @@ export interface Theme {
 
   // Status dot
   thinkingColor: string;
+
+  // Canvas background (tldraw CSS override)
+  canvasBg: string;
 }
 
 export const themes: Record<Tab, Theme> = {
@@ -54,6 +57,7 @@ export const themes: Record<Tab, Theme> = {
     bubbleBtnHover: "hover:bg-[#e8daf0] hover:border-[#c5a3d9] hover:text-[#6b4d8a]",
 
     thinkingColor: "bg-[#c5a3d9]",
+    canvasBg: "#ece5dd",
   },
   design: {
     navBg: "bg-[#eef3f0]",
@@ -78,6 +82,7 @@ export const themes: Record<Tab, Theme> = {
     bubbleBtnHover: "hover:bg-[#d4e8de] hover:border-[#7bb89a] hover:text-[#3d6b55]",
 
     thinkingColor: "bg-[#7bb89a]",
+    canvasBg: "#dde6e0",
   },
   create: {
     navBg: "bg-[#f5f0ea]",
@@ -102,5 +107,6 @@ export const themes: Record<Tab, Theme> = {
     bubbleBtnHover: "hover:bg-[#f0dfc4] hover:border-[#d4a054] hover:text-[#8b6520]",
 
     thinkingColor: "bg-[#d4a054]",
+    canvasBg: "#ece3d5",
   },
 };

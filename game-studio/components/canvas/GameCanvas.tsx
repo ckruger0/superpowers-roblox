@@ -66,7 +66,7 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd, theme }:
 
   const handleMount = useCallback((editor: Editor) => {
     setEditor(editor);
-    editor.user.updateUserPreferences({ colorScheme: "dark" });
+    editor.user.updateUserPreferences({ colorScheme: "light" });
 
     // Track active tool changes
     editor.store.listen(
@@ -371,6 +371,12 @@ IMPORTANT: Respond with valid JSON only:
         .tlui-toolbar,
         .tlui-navigation-zone {
           display: none !important;
+        }
+        .tl-background {
+          background-color: ${theme?.canvasBg ?? "#ece5dd"} !important;
+        }
+        .tl-canvas {
+          background-color: transparent !important;
         }
       `}</style>
 

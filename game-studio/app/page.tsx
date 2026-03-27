@@ -27,8 +27,8 @@ function emptyGDD(): GameDesignDoc {
 const GameCanvas = dynamic(() => import("@/components/canvas/GameCanvas"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-neutral-950 flex items-center justify-center">
-      <span className="text-neutral-600 text-sm">Loading canvas...</span>
+    <div className="w-full h-full bg-[#ece5dd] flex items-center justify-center">
+      <span className="text-[#8a7d6b] text-sm">Loading canvas...</span>
     </div>
   ),
 });
@@ -67,7 +67,7 @@ export default function Home() {
   );
 
   return (
-    <div className="h-screen w-screen bg-neutral-950 overflow-hidden flex flex-col">
+    <div className="h-screen w-screen bg-[#ece5dd] overflow-hidden flex flex-col transition-colors duration-300">
       {/* Top navbar */}
       <div className={`h-12 flex-shrink-0 ${theme.navBg} border-b ${theme.navBorder} flex items-center justify-between px-5 z-50 transition-colors duration-300`}>
         {/* Left: project name */}
