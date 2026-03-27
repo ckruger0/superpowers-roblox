@@ -191,19 +191,24 @@ export default function App() {
         </div>
       </div>
 
-      {/* Content area — canvas stays mounted (hidden) to preserve state */}
+      {/* Content area — canvas and build chat stay mounted to preserve state */}
       <div className="flex-1 overflow-hidden relative">
         <div className={`absolute inset-0 ${activeTab === "ideate" ? "" : "hidden"}`}>
-          <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} theme={theme} onNavigateToCreate={() => { setAutoStartBuild(true); setActiveTab("create"); }} onTitleChange={(title) => setGdd(prev => ({ ...prev, title }))} />
+          <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} theme={theme} onNavigateToDesign={() => setActiveTab("design")} onTitleChange={(title) => setGdd(prev => ({ ...prev, title }))} />
         </div>
 
         {activeTab === "design" && (
-          <GDDFullView gdd={gdd} onUpdate={handleGddUpdate} onTitleChange={(title) => setGdd(prev => ({ ...prev, title }))} />
+          <GDDFullView
+            gdd={gdd}
+            onUpdate={handleGddUpdate}
+            onTitleChange={(title) => setGdd(prev => ({ ...prev, title }))}
+            onStartBuilding={() => { setAutoStartBuild(true); setActiveTab("create"); }}
+          />
         )}
 
-        {activeTab === "create" && (
+        <div className={`absolute inset-0 ${activeTab === "create" ? "" : "hidden"}`}>
           <BuildChat gdd={gdd} autoStart={autoStartBuild} onAutoStartConsumed={() => setAutoStartBuild(false)} />
-        )}
+        </div>
       </div>
 
       {/* About modal */}

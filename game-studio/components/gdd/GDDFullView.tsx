@@ -8,6 +8,7 @@ interface GDDFullViewProps {
   gdd: GameDesignDoc;
   onUpdate?: (section: string, content: string, status: string) => void;
   onTitleChange?: (title: string) => void;
+  onStartBuilding?: () => void;
 }
 
 const sectionMeta: Record<string, { icon: string; label: string; friendlyName: string }> = {
@@ -125,7 +126,7 @@ function generateTagline(gdd: GameDesignDoc): string {
   return "A new Roblox experience";
 }
 
-export default function GDDFullView({ gdd, onTitleChange }: GDDFullViewProps) {
+export default function GDDFullView({ gdd, onTitleChange, onStartBuilding }: GDDFullViewProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(gdd.title);
 
@@ -241,6 +242,24 @@ export default function GDDFullView({ gdd, onTitleChange }: GDDFullViewProps) {
             <BlueprintSection section={gdd.levelPlan} />
           </div>
         </div>
+
+        {/* Start Building button */}
+        {filledCount > 0 && onStartBuilding && (
+          <div className="mb-6">
+            <button
+              onClick={onStartBuilding}
+              className="w-full py-3.5 text-sm font-semibold rounded-xl text-white transition-transform hover:scale-[1.01] active:scale-[0.99]"
+              style={{ backgroundColor: palette.accent }}
+            >
+              {filledCount === 4 ? "Start Building →" : `Start Building (${filledCount}/4 designed)`}
+            </button>
+            {filledCount < 4 && (
+              <p className="text-center text-[11px] mt-1.5" style={{ color: palette.textFaint }}>
+                You can start building now — the AI will fill in the gaps as it goes.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Dev Log */}
         {gdd.devLog.length > 0 && (

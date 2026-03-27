@@ -31,7 +31,7 @@ interface HistoryEntry {
 interface GameCanvasProps {
   onGddUpdate?: (section: string, content: string, status: string) => void;
   onHistoryChange?: (history: HistoryEntry[]) => void;
-  onNavigateToCreate?: () => void;
+  onNavigateToDesign?: () => void;
   onTitleChange?: (title: string) => void;
   gdd?: GameDesignDoc;
   theme?: Theme;
@@ -57,7 +57,7 @@ const components: TLComponents = {
   ZoomMenu: null,
 };
 
-export default function GameCanvas({ onGddUpdate, onHistoryChange, onNavigateToCreate, onTitleChange, gdd, theme }: GameCanvasProps) {
+export default function GameCanvas({ onGddUpdate, onHistoryChange, onNavigateToDesign, onTitleChange, gdd, theme }: GameCanvasProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [bubble, setBubble] = useState<BubbleState | null>(null);
   const [isThinking, setIsThinking] = useState(false);
@@ -582,7 +582,7 @@ Only connect items when the user explicitly links two ideas, or when a confirmed
           // Navigate to Create tab if AI says so (from reply interaction)
           if (shouldNavigateToCreate) {
             setShowReadyModal(false);
-            setTimeout(() => onNavigateToCreate?.(), 500);
+            setTimeout(() => onNavigateToDesign?.(), 500);
           }
         }
       } catch (error) {
@@ -735,10 +735,10 @@ Only connect items when the user explicitly links two ideas, or when a confirmed
       {/* Ready to Build modal */}
       {showReadyModal && (
         <ReadyToBuildModal
-          onBuild={() => {
+          onReview={() => {
             setShowReadyModal(false);
             setBubble(null);
-            onNavigateToCreate?.();
+            onNavigateToDesign?.();
           }}
           onAddMore={() => {
             setShowReadyModal(false);

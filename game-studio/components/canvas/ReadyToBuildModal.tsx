@@ -3,11 +3,11 @@
 import { palette } from "@/lib/themes";
 
 interface ReadyToBuildModalProps {
-  onBuild: () => void;
+  onReview: () => void;
   onAddMore: () => void;
 }
 
-export default function ReadyToBuildModal({ onBuild, onAddMore }: ReadyToBuildModalProps) {
+export default function ReadyToBuildModal({ onReview, onAddMore }: ReadyToBuildModalProps) {
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-auto">
       {/* Dimmed backdrop */}
@@ -27,16 +27,16 @@ export default function ReadyToBuildModal({ onBuild, onAddMore }: ReadyToBuildMo
             Ready to build V1!
           </h2>
           <p className="text-sm mb-6" style={{ color: palette.textMuted }}>
-            Your game design is solid enough to start building. The best feedback comes from playing — let's make it real.
+            Your game design is solid enough to start building. Review your game plan, then start building!
           </p>
 
           <div className="flex flex-col gap-2">
             <button
-              onClick={onBuild}
+              onClick={onReview}
               className="w-full py-3 text-sm font-semibold rounded-xl text-white transition-transform hover:scale-[1.02] active:scale-[0.98]"
               style={{ backgroundColor: palette.accent }}
             >
-              Let's build! →
+              Review my game →
             </button>
             <button
               onClick={onAddMore}
