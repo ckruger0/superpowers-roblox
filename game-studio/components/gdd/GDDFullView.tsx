@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import type { GameDesignDoc, GDDSection } from "@/lib/types";
 import { palette } from "@/lib/themes";
 
 interface GDDFullViewProps {
   gdd: GameDesignDoc;
   onUpdate?: (section: string, content: string, status: string) => void;
+  onTitleChange?: (title: string) => void;
 }
 
 const sectionColors = {
@@ -75,7 +77,10 @@ function GDDCard({ section }: { section: GDDSection; sectionKey: string }) {
   );
 }
 
-export default function GDDFullView({ gdd }: GDDFullViewProps) {
+export default function GDDFullView({ gdd, onTitleChange }: GDDFullViewProps) {
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(gdd.title);
+
   const hasAnyContent =
     gdd.vision.status !== "empty" ||
     gdd.mechanics.status !== "empty" ||
@@ -86,9 +91,51 @@ export default function GDDFullView({ gdd }: GDDFullViewProps) {
     <div className="w-full h-full overflow-y-auto p-8" style={{ backgroundColor: palette.bg }}>
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold mb-1" style={{ color: palette.textPrimary }}>
-            {gdd.title}
-          </h1>
+          <div className="flex items-center gap-2 mb-1">
+            {isEditingTitle ? (
+              <input
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onBlur={() => {
+                  setIsEditingTitle(false);
+                  if (titleDraft.trim() && titleDraft !== gdd.title) {
+                    onTitleChange?.(titleDraft.trim());
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setIsEditingTitle(false);
+                    if (titleDraft.trim() && titleDraft !== gdd.title) {
+                      onTitleChange?.(titleDraft.trim());
+                    }
+                  }
+                  if (e.key === "Escape") {
+                    setIsEditingTitle(false);
+                    setTitleDraft(gdd.title);
+                  }
+                }}
+                className="text-2xl font-bold bg-transparent outline-none border-b-2 py-0.5"
+                style={{ color: palette.textPrimary, borderColor: palette.accent }}
+                autoFocus
+              />
+            ) : (
+              <>
+                <h1 className="text-2xl font-bold" style={{ color: palette.textPrimary }}>
+                  {gdd.title}
+                </h1>
+                <button
+                  onClick={() => { setTitleDraft(gdd.title); setIsEditingTitle(true); }}
+                  className="opacity-40 hover:opacity-70 transition-opacity"
+                  style={{ color: palette.textMuted }}
+                  title="Rename game"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5z" />
+                  </svg>
+                </button>
+              </>
+            )}
+          </div>
           <p className="text-sm" style={{ color: palette.textMuted }}>
             {hasAnyContent
               ? "Your game design document — updated as you brainstorm on the canvas."

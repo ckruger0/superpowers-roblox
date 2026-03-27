@@ -32,6 +32,7 @@ interface GameCanvasProps {
   onGddUpdate?: (section: string, content: string, status: string) => void;
   onHistoryChange?: (history: HistoryEntry[]) => void;
   onNavigateToCreate?: () => void;
+  onTitleChange?: (title: string) => void;
   gdd?: GameDesignDoc;
   theme?: Theme;
 }
@@ -56,7 +57,7 @@ const components: TLComponents = {
   ZoomMenu: null,
 };
 
-export default function GameCanvas({ onGddUpdate, onHistoryChange, onNavigateToCreate, gdd, theme }: GameCanvasProps) {
+export default function GameCanvas({ onGddUpdate, onHistoryChange, onNavigateToCreate, onTitleChange, gdd, theme }: GameCanvasProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [bubble, setBubble] = useState<BubbleState | null>(null);
   const [isThinking, setIsThinking] = useState(false);
@@ -373,7 +374,8 @@ IMPORTANT: Respond with valid JSON only:
   "canvasNotes": [{"text": "short label or summary to add to the moodboard", "nearItemId": "id of canvas item to place it near"}] or null,
   "connections": [{"fromId": "canvas item id", "toId": "canvas item id"}] or null,
   "gddUpdates": [{"section": "vision|mechanics|narrative|levelPlan", "content": "...", "status": "drafting|locked"}] or null,
-  "navigateToCreate": true/false (only true when user confirms they want to start building)
+  "navigateToCreate": true/false (only true when user confirms they want to start building),
+  "gameTitle": "A fun creative name for the game" or null (generate this when all 4 GDD sections are filled — make it catchy and kid-friendly, based on the game concept)
 }
 
 ## When to add canvasNotes — BE VERY SELECTIVE
@@ -476,6 +478,9 @@ Only connect items when the user explicitly links two ideas, or when a confirmed
             canvasNotes = parsed.canvasNotes || null;
             connections = parsed.connections || null;
             shouldNavigateToCreate = parsed.navigateToCreate === true;
+            if (parsed.gameTitle && typeof parsed.gameTitle === "string") {
+              onTitleChange?.(parsed.gameTitle);
+            }
           }
         } catch {
           aiMessage = fullText.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
