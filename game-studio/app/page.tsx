@@ -128,6 +128,7 @@ export default function Home() {
 
         {/* Right: studio connection with hover popover */}
         <div
+          suppressHydrationWarning
           className="relative flex items-center gap-1.5 cursor-default"
           onMouseEnter={() => studioSpaces.length > 0 && setShowSpaces(true)}
           onMouseLeave={() => setShowSpaces(false)}
