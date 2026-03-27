@@ -35,9 +35,11 @@ interface BuildMessage {
 
 interface BuildChatProps {
   gdd: GameDesignDoc;
+  autoStart?: boolean;
+  onAutoStartConsumed?: () => void;
 }
 
-export default function BuildChat({ gdd }: BuildChatProps) {
+export default function BuildChat({ gdd, autoStart, onAutoStartConsumed }: BuildChatProps) {
   const [messages, setMessages] = useState<BuildMessage[]>([]);
   const [input, setInput] = useState("");
   const [isBuilding, setIsBuilding] = useState(false);
@@ -47,6 +49,14 @@ export default function BuildChat({ gdd }: BuildChatProps) {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Auto-start building when navigated from the Ready modal
+  useEffect(() => {
+    if (autoStart && !hasStarted && !isBuilding) {
+      onAutoStartConsumed?.();
+      startBuild();
+    }
+  }, [autoStart]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addMessage = (msg: Omit<BuildMessage, "id">) => {
     setMessages((prev) => [...prev, { ...msg, id: crypto.randomUUID() }]);

@@ -29,6 +29,7 @@ export default function App() {
   const [mcpStatus, setMcpStatus] = useState<McpStatus>({ connected: false });
   const [activeTab, setActiveTab] = useState<Tab>("ideate");
   const [showAbout, setShowAbout] = useState(false);
+  const [autoStartBuild, setAutoStartBuild] = useState(false);
   const [studioSpaces, setStudioSpaces] = useState<Array<{ name: string; id: string }>>([]);
   const [selectedSpace, setSelectedSpace] = useState<string | null>(null);
   const [showSpaces, setShowSpaces] = useState(false);
@@ -193,7 +194,7 @@ export default function App() {
       {/* Content area — canvas stays mounted (hidden) to preserve state */}
       <div className="flex-1 overflow-hidden relative">
         <div className={`absolute inset-0 ${activeTab === "ideate" ? "" : "hidden"}`}>
-          <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} theme={theme} onNavigateToCreate={() => setActiveTab("create")} />
+          <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} theme={theme} onNavigateToCreate={() => { setAutoStartBuild(true); setActiveTab("create"); }} />
         </div>
 
         {activeTab === "design" && (
@@ -201,7 +202,7 @@ export default function App() {
         )}
 
         {activeTab === "create" && (
-          <BuildChat gdd={gdd} />
+          <BuildChat gdd={gdd} autoStart={autoStartBuild} onAutoStartConsumed={() => setAutoStartBuild(false)} />
         )}
       </div>
 

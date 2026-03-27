@@ -5,6 +5,7 @@ import { Tldraw, Editor, TLShapeId, TLComponents, createShapeId, createBindingId
 import "tldraw/tldraw.css";
 import AIBubble, { QuickReply } from "./AIBubble";
 import CanvasToolbar from "./CanvasToolbar";
+import ReadyToBuildModal from "./ReadyToBuildModal";
 import { extractCanvasContext, extractCanvasContextWithDrawings, buildCanvasPrompt, type CanvasItem } from "@/lib/canvas-context";
 import type { GameDesignDoc } from "@/lib/types";
 import type { Theme } from "@/lib/themes";
@@ -60,6 +61,8 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange, onNavigateToC
   const [bubble, setBubble] = useState<BubbleState | null>(null);
   const [isThinking, setIsThinking] = useState(false);
   const [activeTool, setActiveTool] = useState("select");
+  const [showReadyModal, setShowReadyModal] = useState(false);
+  const readyModalShownRef = useRef(false);
   const [, setHistory] = useState<HistoryEntry[]>([]);
   const conversationRef = useRef<Array<{ role: string; content: string }>>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -526,11 +529,34 @@ Only connect items when the user explicitly links two ideas, or when a confirmed
             for (const update of gddUpdates) {
               onGddUpdate?.(update.section, update.content, update.status);
             }
+
+            // Check if all 4 sections are now filled (after this update)
+            if (!readyModalShownRef.current && gdd) {
+              const sectionsAfterUpdate = { ...gdd };
+              for (const update of gddUpdates) {
+                const key = update.section as keyof typeof sectionsAfterUpdate;
+                if (sectionsAfterUpdate[key] && typeof sectionsAfterUpdate[key] === "object" && "content" in sectionsAfterUpdate[key]) {
+                  (sectionsAfterUpdate[key] as { content: string }).content = update.content;
+                }
+              }
+              const allFilled =
+                (sectionsAfterUpdate.vision.content || gddUpdates.some(u => u.section === "vision")) &&
+                (sectionsAfterUpdate.mechanics.content || gddUpdates.some(u => u.section === "mechanics")) &&
+                (sectionsAfterUpdate.narrative.content || gddUpdates.some(u => u.section === "narrative")) &&
+                (sectionsAfterUpdate.levelPlan.content || gddUpdates.some(u => u.section === "levelPlan"));
+
+              if (allFilled) {
+                readyModalShownRef.current = true;
+                // Show modal after a brief delay so updates render first
+                setTimeout(() => setShowReadyModal(true), 800);
+              }
+            }
           }
 
-          // Navigate to Create tab if AI says so
+          // Navigate to Create tab if AI says so (from reply interaction)
           if (shouldNavigateToCreate) {
-            setTimeout(() => onNavigateToCreate?.(), 1500);
+            setShowReadyModal(false);
+            setTimeout(() => onNavigateToCreate?.(), 500);
           }
         }
       } catch (error) {
@@ -667,8 +693,8 @@ Only connect items when the user explicitly links two ideas, or when a confirmed
         </div>
       )}
 
-      {/* AI Bubble */}
-      {bubble && (
+      {/* AI Bubble — hidden when ready modal is showing */}
+      {bubble && !showReadyModal && (
         <AIBubble
           message={bubble.message}
           quickReplies={bubble.quickReplies}
@@ -677,6 +703,24 @@ Only connect items when the user explicitly links two ideas, or when a confirmed
           onDismiss={() => setBubble(null)}
           draggable
           theme={theme}
+        />
+      )}
+
+      {/* Ready to Build modal */}
+      {showReadyModal && (
+        <ReadyToBuildModal
+          onBuild={() => {
+            setShowReadyModal(false);
+            setBubble(null);
+            onNavigateToCreate?.();
+          }}
+          onAddMore={() => {
+            setShowReadyModal(false);
+            // Allow re-showing after 3 more interactions
+            setTimeout(() => {
+              readyModalShownRef.current = false;
+            }, 0);
+          }}
         />
       )}
     </div>
