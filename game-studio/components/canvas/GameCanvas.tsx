@@ -7,6 +7,7 @@ import AIBubble, { QuickReply } from "./AIBubble";
 import CanvasToolbar from "./CanvasToolbar";
 import { extractCanvasContext, buildCanvasPrompt } from "@/lib/canvas-context";
 import type { GameDesignDoc } from "@/lib/types";
+import type { Theme } from "@/lib/themes";
 
 const TLDRAW_LICENSE =
   "tldraw-2026-06-22/WyJVc3NwazFPQiIsWyIqIl0sMTYsIjIwMjYtMDYtMjIiXQ.F/7993pPgWC+etoylsfs4uwen7ECd5ozjOXeGutxjO9A8gfDfYMbKl3FtOBEM/6U6Ej79sgSX24bYzl51WDaXw";
@@ -30,6 +31,7 @@ interface GameCanvasProps {
   onGddUpdate?: (section: string, content: string, status: string) => void;
   onHistoryChange?: (history: HistoryEntry[]) => void;
   gdd?: GameDesignDoc;
+  theme?: Theme;
 }
 
 // Hide ALL of tldraw's built-in UI — we provide our own toolbar
@@ -52,7 +54,7 @@ const components: TLComponents = {
   ZoomMenu: null,
 };
 
-export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd }: GameCanvasProps) {
+export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd, theme }: GameCanvasProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [bubble, setBubble] = useState<BubbleState | null>(null);
   const [isThinking, setIsThinking] = useState(false);
@@ -382,20 +384,19 @@ IMPORTANT: Respond with valid JSON only:
       <CanvasToolbar
         editor={editor}
         activeTool={activeTool}
+        theme={theme}
         onImageAdded={(shapeId) => {
-          // Update item count so the doc listener doesn't double-fire
           const items = editor ? extractCanvasContext(editor) : [];
           lastItemCountRef.current = items.length;
-          // Trigger AI directly with a short delay for the shape to settle
           setTimeout(() => askAI(shapeId), 300);
         }}
       />
 
       {/* AI thinking indicator */}
       {isThinking && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 bg-neutral-900 border border-neutral-700 rounded-full px-3 py-1 flex items-center gap-2 shadow-lg">
-          <div className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
-          <span className="text-neutral-400 text-[11px]">Thinking...</span>
+        <div className={`absolute top-3 left-1/2 -translate-x-1/2 z-50 ${theme?.toolbarBg ?? "bg-[#f5f0eb]"} border ${theme?.toolbarBorder ?? "border-[#e8dfd6]"} rounded-full px-3 py-1 flex items-center gap-2 shadow-lg transition-colors duration-300`}>
+          <div className={`w-1.5 h-1.5 rounded-full ${theme?.thinkingColor ?? "bg-[#c5a3d9]"} animate-pulse`} />
+          <span className={`${theme?.toolbarText ?? "text-[#8a7d6b]"} text-[11px]`}>Thinking...</span>
         </div>
       )}
 
@@ -408,6 +409,7 @@ IMPORTANT: Respond with valid JSON only:
           onReply={handleBubbleReply}
           onDismiss={() => setBubble(null)}
           draggable
+          theme={theme}
         />
       )}
     </div>

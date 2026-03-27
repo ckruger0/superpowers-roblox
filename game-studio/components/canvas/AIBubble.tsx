@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import type { Theme } from "@/lib/themes";
 
 export interface QuickReply {
   label: string;
@@ -15,6 +16,7 @@ interface AIBubbleProps {
   onReply: (text: string) => void;
   onDismiss: () => void;
   draggable?: boolean;
+  theme?: Theme;
 }
 
 export default function AIBubble({
@@ -25,6 +27,7 @@ export default function AIBubble({
   onReply,
   onDismiss,
   draggable = false,
+  theme,
 }: AIBubbleProps) {
   const [freeformOpen, setFreeformOpen] = useState(false);
   const [freeformText, setFreeformText] = useState("");
@@ -85,22 +88,22 @@ export default function AIBubble({
       }}
       onPointerDown={handlePointerDown}
     >
-      <div className="bg-neutral-900 border border-neutral-700 rounded-xl shadow-2xl overflow-hidden">
+      <div className={`${theme?.bubbleBg ?? "bg-[#faf7f4]"} border ${theme?.bubbleBorder ?? "border-[#e8dfd6]"} rounded-xl shadow-2xl overflow-hidden transition-colors duration-300`}>
         {/* Header — drag handle */}
         <div
           data-drag-handle
-          className="flex items-center justify-between px-3 py-1.5 border-b border-neutral-800 cursor-grab active:cursor-grabbing select-none"
+          className={`flex items-center justify-between px-3 py-1.5 border-b ${theme?.bubbleBorder ?? "border-[#e8dfd6]"} cursor-grab active:cursor-grabbing select-none`}
         >
           <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-violet-400" />
-            <span className="text-neutral-400 text-[10px] font-medium">AI</span>
+            <div className={`w-1.5 h-1.5 rounded-full ${theme?.thinkingColor ?? "bg-[#c5a3d9]"}`} />
+            <span className={`${theme?.bubbleAccent ?? "text-[#8b6baa]"} text-[10px] font-medium`}>AI</span>
           </div>
           <button
             onClick={(e) => {
               e.stopPropagation();
               onDismiss();
             }}
-            className="text-neutral-600 hover:text-neutral-400 text-xs transition-colors"
+            className="text-black/30 hover:text-black/60 text-xs transition-colors"
           >
             ×
           </button>
@@ -108,7 +111,7 @@ export default function AIBubble({
 
         {/* Message */}
         <div className="px-3 py-2">
-          <p className="text-neutral-200 text-sm leading-relaxed">{message}</p>
+          <p className="text-[#3d2e1e] text-sm leading-relaxed">{message}</p>
         </div>
 
         {/* Quick replies */}
@@ -118,7 +121,7 @@ export default function AIBubble({
               <button
                 key={reply.value}
                 onClick={() => onReply(reply.value)}
-                className="px-3 py-1 text-xs font-medium rounded-full bg-neutral-800 text-neutral-300 border border-neutral-700 hover:bg-violet-500/10 hover:border-violet-500/30 hover:text-violet-300 transition-colors"
+                className={`px-3 py-1 text-xs font-medium rounded-full ${theme?.bubbleBtnBg ?? "bg-[#f0eae4]"} text-[#5c4f3d] border ${theme?.bubbleBtnBorder ?? "border-[#e0d5c9]"} ${theme?.bubbleBtnHover ?? "hover:bg-[#e8daf0] hover:border-[#c5a3d9] hover:text-[#6b4d8a]"} transition-colors`}
               >
                 {reply.label}
               </button>
@@ -131,7 +134,7 @@ export default function AIBubble({
           <div className="px-3 pb-2">
             <button
               onClick={() => setFreeformOpen(true)}
-              className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors"
+              className="text-[11px] text-black/40 hover:text-black/70 transition-colors"
             >
               + Add more detail...
             </button>
@@ -140,7 +143,7 @@ export default function AIBubble({
 
         {showFreeform && freeformOpen && (
           <div className="px-3 pb-2">
-            <div className="flex items-center gap-1.5 bg-neutral-800 rounded-lg px-2.5 py-1.5 border border-neutral-700 focus-within:border-violet-500/40 transition-colors">
+            <div className={`flex items-center gap-1.5 ${theme?.bubbleBtnBg ?? "bg-[#f0eae4]"} rounded-lg px-2.5 py-1.5 border ${theme?.bubbleBtnBorder ?? "border-[#e0d5c9]"} transition-colors`}>
               <input
                 value={freeformText}
                 onChange={(e) => setFreeformText(e.target.value)}
@@ -151,7 +154,7 @@ export default function AIBubble({
                   }
                 }}
                 placeholder="Type here..."
-                className="flex-1 bg-transparent text-neutral-200 text-xs outline-none placeholder-neutral-600"
+                className="flex-1 bg-transparent text-[#3d2e1e] text-xs outline-none placeholder-black/30"
                 autoFocus
               />
               <button
@@ -161,7 +164,7 @@ export default function AIBubble({
                     setFreeformText("");
                   }
                 }}
-                className="text-violet-400 hover:text-violet-300 text-xs transition-colors"
+                className={`${theme?.bubbleAccent ?? "text-[#8b6baa]"} text-xs transition-colors`}
               >
                 ➤
               </button>
@@ -173,7 +176,7 @@ export default function AIBubble({
       {/* Pointer triangle */}
       {!dragPos && (
         <div className="flex justify-center">
-          <div className="w-3 h-3 bg-neutral-900 border-r border-b border-neutral-700 transform rotate-45 -mt-1.5" />
+          <div className={`w-3 h-3 ${theme?.bubbleBg ?? "bg-[#faf7f4]"} border-r border-b ${theme?.bubbleBorder ?? "border-[#e8dfd6]"} transform rotate-45 -mt-1.5`} />
         </div>
       )}
     </div>

@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useEffect, useCallback, Fragment } from "react";
+import { useState, useEffect, useCallback } from "react";
 import GDDFullView from "@/components/gdd/GDDFullView";
 import BuildChat from "@/components/build/BuildChat";
 import type { GameDesignDoc, McpStatus } from "@/lib/types";
+import { themes, type Tab } from "@/lib/themes";
 
 function emptyGDD(): GameDesignDoc {
   const emptySection = (title: string, accent: string) => ({
@@ -32,13 +33,13 @@ const GameCanvas = dynamic(() => import("@/components/canvas/GameCanvas"), {
   ),
 });
 
-type Tab = "ideate" | "design" | "create";
-
 export default function Home() {
   const [gdd, setGdd] = useState<GameDesignDoc>(emptyGDD());
   const [mcpStatus, setMcpStatus] = useState<McpStatus>({ connected: false });
   const [activeTab, setActiveTab] = useState<Tab>("ideate");
   const [showAbout, setShowAbout] = useState(false);
+
+  const theme = themes[activeTab];
 
   useEffect(() => {
     fetch("/api/mcp/status")
@@ -68,16 +69,16 @@ export default function Home() {
   return (
     <div className="h-screen w-screen bg-neutral-950 overflow-hidden flex flex-col">
       {/* Top navbar */}
-      <div className="h-12 flex-shrink-0 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-5 z-50">
+      <div className={`h-12 flex-shrink-0 ${theme.navBg} border-b ${theme.navBorder} flex items-center justify-between px-5 z-50 transition-colors duration-300`}>
         {/* Left: project name */}
         <div className="flex items-center gap-2">
           <img src="/pepe_silvia_logo.png" alt="Pepe Silvia" className="h-6 w-auto" />
-          <span className="text-neutral-200 font-semibold text-sm tracking-tight">
+          <span className={`${theme.navText} font-semibold text-sm tracking-tight`}>
             Pepe Silvia
           </span>
           <button
             onClick={() => setShowAbout(true)}
-            className="text-neutral-600 hover:text-neutral-400 transition-colors"
+            className={`${theme.tabInactiveText} hover:${theme.navText} transition-colors opacity-60 hover:opacity-100`}
             title="What is this?"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -89,30 +90,34 @@ export default function Home() {
         </div>
 
         {/* Center: tab switcher */}
-        <div className="flex items-center gap-0.5 bg-neutral-800/60 rounded-lg p-0.5">
-          {(["ideate", "design", "create"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-1 rounded-md text-xs font-medium capitalize transition-colors ${
-                activeTab === tab
-                  ? "bg-neutral-700 text-white shadow-sm"
-                  : "text-neutral-500 hover:text-neutral-300"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+        <div className="flex items-center gap-0.5 bg-black/5 rounded-lg p-0.5">
+          {(["ideate", "design", "create"] as const).map((tab) => {
+            const isActive = activeTab === tab;
+            const t = themes[tab];
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-1 rounded-md text-xs font-medium capitalize transition-all duration-200 ${
+                  isActive
+                    ? `${t.tabActiveBg} ${t.tabActiveText} shadow-sm`
+                    : `${theme.tabInactiveText} hover:bg-black/5`
+                }`}
+              >
+                {tab}
+              </button>
+            );
+          })}
         </div>
 
         {/* Right: studio connection */}
         <div className="flex items-center gap-1.5">
           <div
             className={`w-2 h-2 rounded-full ${
-              mcpStatus.connected ? "bg-emerald-400" : "bg-neutral-600"
+              mcpStatus.connected ? "bg-emerald-400" : "bg-neutral-400"
             }`}
           />
-          <span className="text-neutral-500 text-xs">
+          <span className={`${theme.tabInactiveText} text-xs`}>
             {mcpStatus.connected ? "Studio Connected" : "No Studio"}
           </span>
         </div>
@@ -120,17 +125,14 @@ export default function Home() {
 
       {/* Content area */}
       <div className="flex-1 overflow-hidden relative">
-        {/* Ideate: canvas */}
         {activeTab === "ideate" && (
-          <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} />
+          <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} theme={themes[activeTab]} />
         )}
 
-        {/* Design: full-screen GDD */}
         {activeTab === "design" && (
           <GDDFullView gdd={gdd} onUpdate={handleGddUpdate} />
         )}
 
-        {/* Create: build chat with Roblox Studio */}
         {activeTab === "create" && (
           <BuildChat gdd={gdd} />
         )}
@@ -139,11 +141,11 @@ export default function Home() {
       {/* About modal */}
       {showAbout && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
           onClick={() => setShowAbout(false)}
         >
           <div
-            className="bg-neutral-900 border border-neutral-700 rounded-2xl max-w-lg w-full mx-4 overflow-hidden shadow-2xl"
+            className="bg-[#faf7f4] border border-[#e8dfd6] rounded-2xl max-w-lg w-full mx-4 overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <img
@@ -152,24 +154,24 @@ export default function Home() {
               className="w-full"
             />
             <div className="p-6">
-              <h2 className="text-white font-bold text-lg mb-2">
+              <h2 className="text-[#3d2e1e] font-bold text-lg mb-2">
                 What is Pepe Silvia?
               </h2>
-              <p className="text-neutral-300 text-sm leading-relaxed mb-3">
+              <p className="text-[#5c4f3d] text-sm leading-relaxed mb-3">
                 You know that scene in It{"'"}s Always Sunny where Charlie is connecting
                 all the dots on the wall with red string? That{"'"}s this tool.
               </p>
-              <p className="text-neutral-400 text-sm leading-relaxed mb-3">
+              <p className="text-[#8a7d6b] text-sm leading-relaxed mb-3">
                 Throw your ideas at the canvas — images, notes, sketches, vibes, whatever.
                 The AI watches everything and connects the dots into a real game design.
                 Once the design is solid, an AI agent swarm builds it in Roblox Studio.
               </p>
-              <p className="text-neutral-500 text-xs">
+              <p className="text-[#a89880] text-xs">
                 Ideate → Design → Create. From chaos to game.
               </p>
               <button
                 onClick={() => setShowAbout(false)}
-                className="mt-4 w-full py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-sm rounded-lg transition-colors"
+                className="mt-4 w-full py-2 bg-[#e8dfd6] hover:bg-[#ddd2c5] text-[#5c4f3d] text-sm rounded-lg transition-colors font-medium"
               >
                 Got it
               </button>
