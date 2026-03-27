@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Tldraw, Editor, TLShapeId, TLComponents } from "tldraw";
+import { Tldraw, Editor, TLShapeId, TLComponents, createShapeId } from "tldraw";
 import "tldraw/tldraw.css";
 import AIBubble, { QuickReply } from "./AIBubble";
 import CanvasToolbar from "./CanvasToolbar";
@@ -92,6 +92,100 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd, theme }:
     [editor]
   );
 
+  // Place a text note on the canvas near an anchor shape
+  type TldrawColor = "violet" | "black" | "grey" | "blue" | "red" | "green" | "yellow" | "orange" | "light-violet" | "light-blue" | "light-green" | "light-red" | "white";
+
+  const placeNoteOnCanvas = useCallback(
+    (text: string, nearShapeId?: string, color: TldrawColor = "violet"): string | null => {
+      if (!editor) return null;
+
+      let x = 200;
+      let y = 200;
+
+      if (nearShapeId) {
+        const bounds = editor.getShapePageBounds(nearShapeId as TLShapeId);
+        if (bounds) {
+          // Place to the right and slightly below the anchor
+          x = bounds.x + bounds.width + 40;
+          y = bounds.y + 20;
+        }
+      } else {
+        // Place near center of viewport
+        const center = editor.getViewportScreenCenter();
+        const pageCenter = editor.screenToPage(center);
+        x = pageCenter.x;
+        y = pageCenter.y;
+      }
+
+      const shapeId = createShapeId();
+      editor.createShape({
+        id: shapeId,
+        type: "text",
+        x,
+        y,
+        props: {
+          richText: {
+            type: "doc",
+            content: [
+              { type: "paragraph", content: [{ type: "text", text }] },
+            ],
+          },
+          color,
+          size: "s",
+          autoSize: true,
+        },
+      });
+
+      // Don't let this trigger the AI watcher
+      lastItemCountRef.current = extractCanvasContext(editor).length;
+
+      return shapeId;
+    },
+    [editor]
+  );
+
+  // Draw a dotted line between two shapes
+  const connectShapes = useCallback(
+    (fromId: string, toId: string) => {
+      if (!editor) return;
+
+      try {
+        const fromBounds = editor.getShapePageBounds(fromId as TLShapeId);
+        const toBounds = editor.getShapePageBounds(toId as TLShapeId);
+        if (!fromBounds || !toBounds) return;
+
+        // Calculate center points
+        const fromX = fromBounds.x + fromBounds.width / 2;
+        const fromY = fromBounds.y + fromBounds.height / 2;
+        const toX = toBounds.x + toBounds.width / 2;
+        const toY = toBounds.y + toBounds.height / 2;
+
+        const arrowId = createShapeId();
+        editor.createShape({
+          id: arrowId,
+          type: "arrow",
+          x: fromX,
+          y: fromY,
+          props: {
+            dash: "dotted",
+            color: "light-violet",
+            size: "s",
+            start: { x: 0, y: 0 },
+            end: { x: toX - fromX, y: toY - fromY },
+            arrowheadEnd: "none",
+            arrowheadStart: "none",
+          },
+        });
+
+        // Don't let this trigger the AI watcher
+        lastItemCountRef.current = extractCanvasContext(editor).length;
+      } catch {
+        // Silently skip connection errors
+      }
+    },
+    [editor]
+  );
+
   // Pre-captured drawing data — filled during debounce period
   const precapturedItemsRef = useRef<CanvasItem[] | null>(null);
 
@@ -172,8 +266,21 @@ IMPORTANT: Respond with valid JSON only:
   "message": "your message text",
   "quickReplies": [{"label": "Short Button Text", "value": "what this means"}],
   "anchorItemId": "id of the canvas item to show the bubble near — pick the NEWEST relevant one",
+  "canvasNotes": [{"text": "short label or summary to add to the moodboard", "nearItemId": "id of canvas item to place it near"}] or null,
+  "connections": [{"fromId": "canvas item id", "toId": "canvas item id"}] or null,
   "gddUpdates": [{"section": "vision|mechanics|narrative|levelPlan", "content": "...", "status": "drafting|locked"}] or null
-}`;
+}
+
+## When to add canvasNotes
+- When a decision is made (user picks a mechanic, confirms a vibe), add a short summary note to the canvas near the relevant item
+- When you notice a theme or connection, add a label that names it ("volcano theme", "rising tension")
+- Keep notes SHORT — 2-5 words. They're labels on a moodboard, not paragraphs.
+- Don't add notes for every response — only when something is worth pinning to the canvas.
+
+## When to add connections
+- When two canvas items are related (e.g., a volcano image + "lava obby" text)
+- When a user's reply connects two ideas
+- Use the actual item IDs from the canvas listing above.`;
 
       const userMessage = triggerDesc;
       conversationRef.current.push({ role: "user", content: userMessage });
@@ -243,6 +350,8 @@ IMPORTANT: Respond with valid JSON only:
         let aiMessage = "";
         let quickReplies: QuickReply[] = [];
         let gddUpdates: Array<{ section: string; content: string; status: string }> | null = null;
+        let canvasNotes: Array<{ text: string; nearItemId?: string }> | null = null;
+        let connections: Array<{ fromId: string; toId: string }> | null = null;
 
         try {
           const jsonMatch = fullText.match(/\{[\s\S]*\}/);
@@ -251,19 +360,39 @@ IMPORTANT: Respond with valid JSON only:
             aiMessage = parsed.message || "";
             quickReplies = parsed.quickReplies || [];
             gddUpdates = parsed.gddUpdates || null;
+            canvasNotes = parsed.canvasNotes || null;
+            connections = parsed.connections || null;
           }
         } catch {
-          // JSON parse failed — use the raw text as the message
           aiMessage = fullText.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
         }
 
-        // If we still have no message, use the full text
         if (!aiMessage && fullText.trim()) {
           aiMessage = fullText.trim();
         }
 
         if (aiMessage) {
           conversationRef.current.push({ role: "assistant", content: aiMessage });
+
+          // Place AI-generated notes on the canvas
+          const newNoteIds: Record<string, string> = {};
+          if (canvasNotes) {
+            for (const note of canvasNotes) {
+              const noteId = placeNoteOnCanvas(note.text, note.nearItemId);
+              if (noteId && note.nearItemId) {
+                newNoteIds[note.text] = noteId;
+                // Connect the note to the item it's near
+                connectShapes(note.nearItemId, noteId);
+              }
+            }
+          }
+
+          // Draw connections between canvas items
+          if (connections) {
+            for (const conn of connections) {
+              connectShapes(conn.fromId, conn.toId);
+            }
+          }
 
           // Always anchor to the trigger item, falling back to newest item
           const anchorId = triggerItemId || items[items.length - 1]?.id || "";
@@ -363,6 +492,12 @@ IMPORTANT: Respond with valid JSON only:
   }, [editor, bubble?.anchorId, bubble?.dragOffset, getShapeScreenPos]);
 
   const handleBubbleReply = (text: string) => {
+    // Place the user's reply on the canvas near the bubble's anchor
+    const replyNoteId = placeNoteOnCanvas(text, bubble?.anchorId, "black");
+    if (replyNoteId && bubble?.anchorId) {
+      connectShapes(bubble.anchorId, replyNoteId);
+    }
+
     setHistory((prev) => {
       const updated = [...prev];
       if (updated.length > 0) {
@@ -372,7 +507,7 @@ IMPORTANT: Respond with valid JSON only:
       return updated;
     });
     setBubble(null);
-    askAI(undefined, text);
+    askAI(replyNoteId ?? undefined, text);
   };
 
   return (
