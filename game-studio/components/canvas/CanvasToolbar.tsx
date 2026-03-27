@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useCallback } from "react";
 import type { Editor } from "tldraw";
-import { createShapeId, AssetRecordType } from "tldraw";
+import { createShapeId } from "tldraw";
 
 interface CanvasToolbarProps {
   editor: Editor | null;
@@ -38,6 +38,8 @@ function ToolButton({
 
 export default function CanvasToolbar({ editor, activeTool, onImageAdded }: CanvasToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const setTool = (tool: string) => {
     if (!editor) return;
@@ -55,7 +57,6 @@ export default function CanvasToolbar({ editor, activeTool, onImageAdded }: Canv
 
     editor.createAssets([asset]);
 
-    // Get actual image dimensions to preserve aspect ratio
     const assetProps = asset.props as { w?: number; h?: number };
     const naturalW = assetProps.w || 200;
     const naturalH = assetProps.h || 150;
@@ -76,11 +77,71 @@ export default function CanvasToolbar({ editor, activeTool, onImageAdded }: Canv
       props: { assetId: asset.id, w, h },
     });
 
-    // Notify parent that an image was added (triggers AI directly)
     onImageAdded?.(shapeId);
-
     e.target.value = "";
   };
+
+  const toggleVoice = useCallback(() => {
+    if (!editor) return;
+
+    // Stop if already listening
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+    recognitionRef.current = recognition;
+
+    recognition.onstart = () => setIsListening(true);
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[0][0].transcript.trim();
+      if (!transcript || !editor) return;
+
+      // Place the transcribed text as a text shape on the canvas
+      const center = editor.getViewportScreenCenter();
+      const pageCenter = editor.screenToPage(center);
+      const shapeId = createShapeId();
+
+      editor.createShape({
+        id: shapeId,
+        type: "text",
+        x: pageCenter.x - 50,
+        y: pageCenter.y - 10,
+        props: {
+          richText: {
+            type: "doc",
+            content: [
+              {
+                type: "paragraph",
+                content: [{ type: "text", text: transcript }],
+              },
+            ],
+          },
+          color: "white",
+          size: "m",
+          autoSize: true,
+        },
+      });
+    };
+
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+
+    recognition.start();
+  }, [editor, isListening]);
 
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50">
@@ -125,6 +186,16 @@ export default function CanvasToolbar({ editor, activeTool, onImageAdded }: Canv
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
             <circle cx="8.5" cy="8.5" r="1.5" />
             <polyline points="21 15 16 10 5 21" />
+          </svg>
+        </ToolButton>
+
+        {/* Voice input */}
+        <ToolButton active={isListening} onClick={toggleVoice} title="Voice to Text">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
+            <path d="M19 10v2a7 7 0 01-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
           </svg>
         </ToolButton>
 
