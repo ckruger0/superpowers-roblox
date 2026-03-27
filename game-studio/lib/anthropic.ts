@@ -1,7 +1,19 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { callMcpTool, listMcpTools } from "./mcp-client";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
+import crypto from "crypto";
 
 const anthropic = new Anthropic();
+
+async function saveScreenshot(base64Data: string, mimeType: string): Promise<string> {
+  const dir = path.join(process.cwd(), "public", "screenshots");
+  await mkdir(dir, { recursive: true });
+  const ext = mimeType.includes("png") ? "png" : "jpg";
+  const filename = `screenshot-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+  await writeFile(path.join(dir, filename), Buffer.from(base64Data, "base64"));
+  return `/screenshots/${filename}`;
+}
 
 interface ConversationMessage {
   role: "user" | "assistant";
@@ -175,9 +187,25 @@ export async function streamConversation(
             console.log(`[MCP] screen_capture: NO IMAGE FOUND. Result preview: ${resultStr.slice(0, 500)}`);
           }
 
+          // Save to disk and send a URL instead of massive base64 through SSE
+          let screenshotUrl: string | null = null;
+          if (imageUrl) {
+            try {
+              // Extract raw base64 from data URL
+              const b64Match = imageUrl.match(/;base64,(.+)$/);
+              const mimeMatch = imageUrl.match(/^data:([^;]+)/);
+              if (b64Match && mimeMatch) {
+                screenshotUrl = await saveScreenshot(b64Match[1], mimeMatch[1]);
+                console.log(`[MCP] screen_capture: saved to ${screenshotUrl}`);
+              }
+            } catch (err) {
+              console.error(`[MCP] screen_capture: failed to save`, err);
+            }
+          }
+
           callbacks.onToolResult(toolUse.name, {
-            hasImage: !!imageUrl,
-            imageUrl,
+            hasImage: !!screenshotUrl,
+            imageUrl: screenshotUrl,
           });
         } else {
           const preview = resultStr.length > 2000

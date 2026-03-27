@@ -20,6 +20,9 @@
 # production
 /build
 
+# screenshots from Roblox Studio
+/public/screenshots/
+
 # misc
 .DS_Store
 *.pem
