@@ -122,17 +122,64 @@ export async function streamConversation(
           toolUse.input as Record<string, unknown>
         );
 
-        // For screen_capture, extract the image and send it separately
-        // Don't send the full base64 through the tool_result SSE event
         const resultStr = JSON.stringify(result);
+        console.log(`[MCP] Tool ${toolUse.name} result length: ${resultStr.length}`);
+
         if (toolUse.name === "screen_capture") {
-          const imageMatch = resultStr.match(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/);
+          // MCP returns ImageContent: { content: [{ type: "image", data: "<base64>", mimeType: "image/jpeg" }] }
+          // Or it might be nested differently. Let's try multiple extraction strategies.
+          let imageUrl: string | null = null;
+
+          // Strategy 1: MCP ImageContent block — { type: "image", data: "...", mimeType: "..." }
+          const r = result as Record<string, unknown>;
+          const content = r?.content as Array<Record<string, unknown>> | undefined;
+          if (content) {
+            for (const block of content) {
+              if (block.type === "image" && typeof block.data === "string") {
+                const mimeType = (block.mimeType as string) || "image/jpeg";
+                imageUrl = `data:${mimeType};base64,${block.data}`;
+                console.log(`[MCP] screen_capture: extracted ImageContent block (${mimeType}, ${block.data.length} chars)`);
+                break;
+              }
+              // Also check for text blocks that contain base64
+              if (block.type === "text" && typeof block.text === "string") {
+                const match = block.text.match(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/);
+                if (match) {
+                  imageUrl = match[0];
+                  console.log(`[MCP] screen_capture: extracted from text block (${imageUrl.length} chars)`);
+                  break;
+                }
+              }
+            }
+          }
+
+          // Strategy 2: raw data:image URL somewhere in the JSON
+          if (!imageUrl) {
+            const match = resultStr.match(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/);
+            if (match) {
+              imageUrl = match[0];
+              console.log(`[MCP] screen_capture: extracted via regex (${imageUrl.length} chars)`);
+            }
+          }
+
+          // Strategy 3: raw base64 in a "data" field
+          if (!imageUrl) {
+            const dataMatch = resultStr.match(/"data"\s*:\s*"([A-Za-z0-9+/=]{100,})"/);
+            if (dataMatch) {
+              imageUrl = `data:image/jpeg;base64,${dataMatch[1]}`;
+              console.log(`[MCP] screen_capture: extracted raw data field (${dataMatch[1].length} chars)`);
+            }
+          }
+
+          if (!imageUrl) {
+            console.log(`[MCP] screen_capture: NO IMAGE FOUND. Result preview: ${resultStr.slice(0, 500)}`);
+          }
+
           callbacks.onToolResult(toolUse.name, {
-            hasImage: true,
-            imageUrl: imageMatch?.[0] ?? null,
+            hasImage: !!imageUrl,
+            imageUrl,
           });
         } else {
-          // Truncate large results for the SSE stream
           const preview = resultStr.length > 2000
             ? resultStr.slice(0, 2000) + "...(truncated)"
             : result;
@@ -142,7 +189,9 @@ export async function streamConversation(
         toolResults.push({
           type: "tool_result",
           tool_use_id: toolUse.id,
-          content: resultStr,
+          content: resultStr.length > 100000
+            ? resultStr.slice(0, 100000) + "...(truncated for Claude)"
+            : resultStr,
         });
       } catch (error) {
         const errMsg =
