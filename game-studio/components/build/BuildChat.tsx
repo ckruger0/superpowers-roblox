@@ -176,7 +176,184 @@ Describe what you built, then IMMEDIATELY start the next batch. Don't wait.
 2. **Spatial anchors** — walls, boundaries, major landmarks that define the space
 3. **Essential objects** — the hero pieces (the main gameplay objects)
 4. **Atmosphere** — scenery, lighting, particles, decorations
-5. **Scripts** — game mechanics, interactions
+5. **Core game scripts** — mechanics, win/lose, UI (see scripting section below)
+6. **Polish scripts** — sound effects, particles on events, animations
+
+## SCRIPTING — Every Game Needs These
+
+After the world is built, ALWAYS create scripts for the full gameplay loop. Don't stop at placing objects — a game without scripts is just a diorama. Think about the COMPLETE player experience from spawn to win/lose.
+
+### Script Architecture — What Goes Where
+- **ServerScriptService** → Server scripts that manage game state, scoring, round logic
+- **StarterPlayerScripts** → Client scripts for UI, camera, input
+- **StarterGui** → ScreenGuis for HUD, win/lose screens, score display
+- **Workspace (in parts)** → Scripts on specific objects for interactions (Touched events, ClickDetectors)
+
+### Every Game MUST Have:
+1. **A win condition** — what does the player achieve? Reaching a goal, collecting all items, surviving a timer, etc. This needs BOTH a detection script AND a visible reward (UI message, celebration effect).
+2. **A lose condition** (if applicable) — falling into void, health reaching 0, timer running out. Must respawn the player or show a "Try Again" screen.
+3. **Player feedback UI** — the player must always know:
+   - What they're trying to do (objective display)
+   - How they're doing (score, health, progress bar, timer)
+   - When they win or lose (big clear message + what to do next)
+
+### Common Script Patterns — Use These
+
+**Win zone (player touches a goal):**
+\`\`\`lua
+-- Server Script in the goal part
+local goal = script.Parent
+goal.Touched:Connect(function(hit)
+    local player = game.Players:GetPlayerFromCharacter(hit.Parent)
+    if player then
+        -- Fire to client for UI
+        game.ReplicatedStorage.WinEvent:FireClient(player)
+    end
+end)
+\`\`\`
+
+**Win screen UI (client-side):**
+\`\`\`lua
+-- LocalScript in StarterPlayerScripts
+local event = game.ReplicatedStorage:WaitForChild("WinEvent")
+event.OnClientEvent:Connect(function()
+    local gui = player.PlayerGui:WaitForChild("WinScreen")
+    gui.Enabled = true
+    -- Optional: play sound, show confetti
+end)
+\`\`\`
+
+**Kill zone (lava, void, hazard):**
+\`\`\`lua
+-- Script in the hazard part
+script.Parent.Touched:Connect(function(hit)
+    local humanoid = hit.Parent:FindFirstChild("Humanoid")
+    if humanoid then humanoid.Health = 0 end
+end)
+\`\`\`
+
+**Collectibles (coins, gems, items):**
+\`\`\`lua
+-- Script in each collectible
+local collected = false
+script.Parent.Touched:Connect(function(hit)
+    if collected then return end
+    local player = game.Players:GetPlayerFromCharacter(hit.Parent)
+    if player then
+        collected = true
+        script.Parent:Destroy()
+        local ls = player:FindFirstChild("leaderstats")
+        if ls then ls.Coins.Value += 1 end
+    end
+end)
+\`\`\`
+
+**Leaderstats (score/coins):**
+\`\`\`lua
+-- Script in ServerScriptService
+game.Players.PlayerAdded:Connect(function(player)
+    local ls = Instance.new("Folder")
+    ls.Name = "leaderstats"
+    ls.Parent = player
+    local coins = Instance.new("IntValue")
+    coins.Name = "Coins"
+    coins.Parent = ls
+end)
+\`\`\`
+
+**Checkpoint system:**
+\`\`\`lua
+-- Script in each checkpoint part
+script.Parent.Touched:Connect(function(hit)
+    local player = game.Players:GetPlayerFromCharacter(hit.Parent)
+    if player then
+        player.RespawnLocation = script.Parent -- must be a SpawnLocation
+    end
+end)
+\`\`\`
+
+**Timer (countdown):**
+\`\`\`lua
+-- Script in ServerScriptService
+local timeLeft = Instance.new("IntValue")
+timeLeft.Name = "TimeLeft"
+timeLeft.Value = 60
+timeLeft.Parent = game.ReplicatedStorage
+
+while timeLeft.Value > 0 do
+    task.wait(1)
+    timeLeft.Value -= 1
+end
+-- Time's up — handle lose condition
+\`\`\`
+
+**Simple HUD (score + timer display):**
+Create via execute_luau: a ScreenGui in StarterGui with TextLabels that bind to leaderstats and ReplicatedStorage values.
+
+### Scripting Checklist — Run Through This After World Build
+Ask yourself for EACH mechanic in the GDD:
+1. Does the player know what to do? (objective visible on screen)
+2. Can the player DO it? (interactions scripted — Touched, ClickDetector, ProximityPrompt)
+3. Does something happen when they do it? (feedback — sound, particles, score change, UI update)
+4. Is there an end state? (win screen, level complete, "play again" option)
+5. Can the player fail? (death → respawn, or game over screen)
+
+### How to Create Scripts via MCP
+Use \`execute_luau\` to create and parent scripts:
+\`\`\`lua
+local script = Instance.new("Script")
+script.Name = "WinZone"
+script.Source = [[
+    -- script code here
+]]
+script.Parent = workspace.GoalPart
+return "Created WinZone script"
+\`\`\`
+
+For client scripts (LocalScripts), parent them to StarterPlayerScripts:
+\`\`\`lua
+local ls = Instance.new("LocalScript")
+ls.Name = "WinScreenHandler"
+ls.Source = [[
+    -- client code here
+]]
+ls.Parent = game.StarterPlayer.StarterPlayerScripts
+return "Created client script"
+\`\`\`
+
+For ScreenGuis, create in StarterGui:
+\`\`\`lua
+local sg = Instance.new("ScreenGui")
+sg.Name = "GameHUD"
+sg.Parent = game.StarterGui
+
+local label = Instance.new("TextLabel")
+label.Size = UDim2.new(0, 200, 0, 50)
+label.Position = UDim2.new(0.5, -100, 0, 10)
+label.Text = "Score: 0"
+label.TextColor3 = Color3.new(1,1,1)
+label.BackgroundTransparency = 0.5
+label.BackgroundColor3 = Color3.new(0,0,0)
+label.Font = Enum.Font.GothamBold
+label.TextSize = 24
+label.Parent = sg
+return "Created HUD"
+\`\`\`
+
+For RemoteEvents (server↔client communication):
+\`\`\`lua
+local re = Instance.new("RemoteEvent")
+re.Name = "WinEvent"
+re.Parent = game.ReplicatedStorage
+return "Created WinEvent"
+\`\`\`
+
+### IMPORTANT: Script Creation Order
+1. RemoteEvents first (in ReplicatedStorage) — other scripts depend on these
+2. Server scripts (ServerScriptService) — game state, leaderstats, round logic
+3. Object scripts (in workspace parts) — Touched events, interactions
+4. Client scripts (StarterPlayerScripts) — UI handlers, camera
+5. GUI elements (StarterGui) — ScreenGuis, TextLabels, buttons
 
 ## Positioning Rules — THIS IS CRITICAL
 - **ALWAYS get existing positions before placing new objects.** Run the layout helper.
