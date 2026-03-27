@@ -7,6 +7,7 @@ import { createShapeId, AssetRecordType } from "tldraw";
 interface CanvasToolbarProps {
   editor: Editor | null;
   activeTool: string;
+  onImageAdded?: (shapeId: string) => void;
 }
 
 function ToolButton({
@@ -35,7 +36,7 @@ function ToolButton({
   );
 }
 
-export default function CanvasToolbar({ editor, activeTool }: CanvasToolbarProps) {
+export default function CanvasToolbar({ editor, activeTool, onImageAdded }: CanvasToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const setTool = (tool: string) => {
@@ -56,16 +57,19 @@ export default function CanvasToolbar({ editor, activeTool }: CanvasToolbarProps
 
     const center = editor.getViewportScreenCenter();
     const pageCenter = editor.screenToPage(center);
+    const shapeId = createShapeId();
 
     editor.createShape({
-      id: createShapeId(),
+      id: shapeId,
       type: "image",
       x: pageCenter.x - 100,
       y: pageCenter.y - 75,
       props: { assetId: asset.id, w: 200, h: 150 },
     });
 
-    // Reset input so same file can be selected again
+    // Notify parent that an image was added (triggers AI directly)
+    onImageAdded?.(shapeId);
+
     e.target.value = "";
   };
 

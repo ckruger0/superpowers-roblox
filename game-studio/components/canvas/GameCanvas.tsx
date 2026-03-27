@@ -203,40 +203,51 @@ IMPORTANT: Respond with valid JSON only:
           }
         }
 
-        let parsed;
+        // Parse AI response — try JSON first, fall back to plain text
+        let aiMessage = "";
+        let quickReplies: QuickReply[] = [];
+        let gddUpdates: Array<{ section: string; content: string; status: string }> | null = null;
+
         try {
           const jsonMatch = fullText.match(/\{[\s\S]*\}/);
-          parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            aiMessage = parsed.message || "";
+            quickReplies = parsed.quickReplies || [];
+            gddUpdates = parsed.gddUpdates || null;
+          }
         } catch {
-          parsed = null;
+          // JSON parse failed — use the raw text as the message
+          aiMessage = fullText.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
         }
 
-        if (parsed?.message) {
-          conversationRef.current.push({ role: "assistant", content: parsed.message });
+        // If we still have no message, use the full text
+        if (!aiMessage && fullText.trim()) {
+          aiMessage = fullText.trim();
+        }
 
-          const anchorId = parsed.anchorItemId || triggerItemId || items[items.length - 1]?.id;
+        if (aiMessage) {
+          conversationRef.current.push({ role: "assistant", content: aiMessage });
+
+          // Always anchor to the trigger item, falling back to newest item
+          const anchorId = triggerItemId || items[items.length - 1]?.id || "";
           const screenPos = anchorId ? getShapeScreenPos(anchorId) : null;
 
           setBubble({
-            message: parsed.message,
-            quickReplies: parsed.quickReplies || [],
-            anchorId: anchorId || "",
+            message: aiMessage,
+            quickReplies,
+            anchorId,
             screenPosition: screenPos || { x: window.innerWidth / 2, y: window.innerHeight / 3 },
           });
 
-          const entry: HistoryEntry = {
-            timestamp: Date.now(),
-            trigger: triggerDesc,
-            aiMessage: parsed.message,
-          };
           setHistory((prev) => {
-            const next = [...prev, entry];
+            const next = [...prev, { timestamp: Date.now(), trigger: triggerDesc, aiMessage }];
             onHistoryChange?.(next);
             return next;
           });
 
-          if (parsed.gddUpdates) {
-            for (const update of parsed.gddUpdates) {
+          if (gddUpdates) {
+            for (const update of gddUpdates) {
               onGddUpdate?.(update.section, update.content, update.status);
             }
           }
@@ -341,7 +352,17 @@ IMPORTANT: Respond with valid JSON only:
       />
 
       {/* Custom toolbar */}
-      <CanvasToolbar editor={editor} activeTool={activeTool} />
+      <CanvasToolbar
+        editor={editor}
+        activeTool={activeTool}
+        onImageAdded={(shapeId) => {
+          // Update item count so the doc listener doesn't double-fire
+          const items = editor ? extractCanvasContext(editor) : [];
+          lastItemCountRef.current = items.length;
+          // Trigger AI directly with a short delay for the shape to settle
+          setTimeout(() => askAI(shapeId), 300);
+        }}
+      />
 
       {/* AI thinking indicator */}
       {isThinking && (
