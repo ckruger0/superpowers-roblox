@@ -62,9 +62,10 @@ export async function streamConversation(
       callbacks.onNewMessage();
     }
     isFirstIteration = false;
+    console.log(`[AI] Starting stream iteration ${isFirstIteration ? 1 : "N"}, messages: ${currentMessages.length}`);
     const stream = anthropic.messages.stream({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 8192,
+      max_tokens: 16384,
       system: systemPrompt,
       messages: currentMessages as Anthropic.MessageParam[],
       tools: tools.length > 0 ? tools : undefined,
@@ -107,9 +108,12 @@ export async function streamConversation(
     }
 
     if (!hasToolUse) {
+      console.log(`[AI] No more tool calls — conversation complete. Response length: ${fullResponse.length}`);
       callbacks.onDone(fullResponse);
       return;
     }
+
+    console.log(`[AI] ${toolUseBlocks.length} tool call(s) to execute: ${toolUseBlocks.map(t => t.name).join(", ")}`);
 
     // Build assistant message with all content blocks
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -216,32 +220,63 @@ export async function streamConversation(
           });
 
           // Send the image back to Claude as a vision block so it can SEE what was captured
-          const b64Match = imageUrl?.match(/;base64,(.+)$/);
-          const mimeMatch = imageUrl?.match(/^data:([^;]+)/);
-          if (b64Match && mimeMatch) {
-            toolResults.push({
-              type: "tool_result",
-              tool_use_id: toolUse.id,
-              content: [
-                {
-                  type: "image",
-                  source: {
-                    type: "base64",
-                    media_type: mimeMatch[1],
-                    data: b64Match[1],
+          // Resize if needed to stay under Claude's limits
+          const b64ForClaude = imageUrl?.match(/;base64,(.+)$/);
+          const mimeForClaude = imageUrl?.match(/^data:([^;]+)/);
+          if (b64ForClaude && mimeForClaude) {
+            let imageData = b64ForClaude[1];
+            let mediaType = mimeForClaude[1];
+
+            // If image is over 500KB base64, compress by resizing
+            if (imageData.length > 500000) {
+              try {
+                const sharp = await import("sharp");
+                const inputBuffer = Buffer.from(imageData, "base64");
+                const resized = await sharp.default(inputBuffer)
+                  .resize(800, 600, { fit: "inside" })
+                  .jpeg({ quality: 70 })
+                  .toBuffer();
+                imageData = resized.toString("base64");
+                mediaType = "image/jpeg";
+                console.log(`[MCP] screen_capture: resized for Claude (${imageData.length} chars)`);
+              } catch {
+                // sharp not available — truncate to stay safe
+                console.log(`[MCP] screen_capture: sharp not available, sending text description instead`);
+                toolResults.push({
+                  type: "tool_result",
+                  tool_use_id: toolUse.id,
+                  content: "Screenshot captured and shown to user. Describe what you built and ask if it looks right. Continue building the next section.",
+                });
+                // Skip the image block below
+                imageData = "";
+              }
+            }
+
+            if (imageData) {
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: toolUse.id,
+                content: [
+                  {
+                    type: "image",
+                    source: {
+                      type: "base64",
+                      media_type: mediaType,
+                      data: imageData,
+                    },
                   },
-                },
-                {
-                  type: "text",
-                  text: "Screenshot captured. Look at this image carefully. Evaluate what you see against the game design — what looks good, what needs to change? Then continue building or ask the user for feedback.",
-                },
-              ],
-            });
+                  {
+                    type: "text",
+                    text: "Screenshot captured and shown to the user. Evaluate what you see: does it match the game design? Note any issues (floating objects, wrong scale, missing items). Then either fix issues, continue building the next section, or ask the user for feedback. Do NOT stop here — keep going.",
+                  },
+                ],
+              });
+            }
           } else {
             toolResults.push({
               type: "tool_result",
               tool_use_id: toolUse.id,
-              content: "Screenshot captured but image data could not be extracted.",
+              content: "Screenshot captured and shown to user. Continue building the next section.",
             });
           }
         } else {
