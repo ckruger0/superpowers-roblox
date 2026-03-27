@@ -399,23 +399,24 @@ IMPORTANT: Respond with valid JSON only:
   "gameTitle": "A fun creative name for the game" or null (generate this when all 4 GDD sections are filled — make it catchy and kid-friendly, based on the game concept)
 }
 
-## When to add canvasNotes — BE VERY SELECTIVE
-Only add a canvasNote when a FIRM DECISION is made. The note should be a concise capture of what was decided — combining your question and the user's answer into one label. Examples:
-- You asked "scary or chill?" → user picked "scary" → add note "Vibe: scary"
-- You asked "rising lava?" → user said yes → add note "Rising lava ✓"
-- User picks "volcano escape" → add note "Theme: volcano escape"
+## When to add canvasNotes
+Add a canvasNote when:
+- A decision is made (user confirms something) → "Vibe: scary", "Rising lava ✓"
+- You notice a theme or connection → "volcano theme", "time pressure"
+- A GDD section gets filled → "Vision locked ✓"
+- The user gives meaningful input → summarize as "Q: scary or chill? → scary"
 
-The note is a SUMMARY of the decision, not the user's raw text. 2-4 words max.
+Notes are concise summaries: 2-5 words max. They build up the moodboard so the kid can see their game taking shape.
 
-Do NOT add notes for:
-- Your own questions or suggestions
-- Vague or tentative ideas
-- Anything the user hasn't committed to
+Do NOT add notes for: your own unanswered questions, greetings, or vague ideas the user hasn't committed to.
 
-Most responses should have canvasNotes: null. Only when a clear decision is made.
+## When to add connections
+Connect items when:
+- Two canvas items are clearly related (volcano image + "lava obby" text)
+- A user reply connects to an earlier idea
+- A decision note relates back to something on the canvas
 
-## When to add connections — BE SELECTIVE
-Only connect items when the user explicitly links two ideas, or when a confirmed decision ties back to something on the canvas. Don't connect everything — a few meaningful lines are better than a web of clutter. Most responses should have connections: null.`;
+Connections make the "connecting the dots" visual. Use them when the relationship is real.`;
 
       const userMessage = triggerDesc;
       conversationRef.current.push({ role: "user", content: userMessage });
@@ -660,8 +661,11 @@ Only connect items when the user explicitly links two ideas, or when a confirmed
   }, [editor, bubble?.anchorId, bubble?.dragOffset, getShapeScreenPos]);
 
   const handleBubbleReply = (text: string) => {
-    // Don't place every reply on canvas — the AI's canvasNotes will
-    // add concise decision summaries when something substantive is confirmed
+    // Place the user's reply on the canvas near the bubble's anchor
+    const replyNoteId = placeReplyOnCanvas(text, bubble?.anchorId);
+    if (replyNoteId && bubble?.anchorId) {
+      connectShapes(bubble.anchorId, replyNoteId);
+    }
 
     setHistory((prev) => {
       const updated = [...prev];
@@ -672,7 +676,7 @@ Only connect items when the user explicitly links two ideas, or when a confirmed
       return updated;
     });
     setBubble(null);
-    askAI(bubble?.anchorId ?? undefined, text);
+    askAI(replyNoteId ?? undefined, text);
   };
 
   return (
