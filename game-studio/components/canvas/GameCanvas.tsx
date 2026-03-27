@@ -13,8 +13,6 @@ export default function GameCanvas({ onDrop }: GameCanvasProps) {
 
   const handleMount = useCallback((editor: Editor) => {
     setEditor(editor);
-
-    // Set dark theme
     editor.user.updateUserPreferences({ colorScheme: "dark" });
   }, []);
 
@@ -33,7 +31,6 @@ export default function GameCanvas({ onDrop }: GameCanvasProps) {
 
       if (imageFiles.length === 0) return;
 
-      // Get canvas position from drop coordinates
       const point = editor.screenToPage({ x: e.clientX, y: e.clientY });
 
       for (let i = 0; i < imageFiles.length; i++) {
@@ -44,7 +41,6 @@ export default function GameCanvas({ onDrop }: GameCanvasProps) {
         });
         if (!asset) continue;
 
-        const assetId = asset.id;
         editor.createAssets([asset]);
 
         editor.createShape({
@@ -53,7 +49,7 @@ export default function GameCanvas({ onDrop }: GameCanvasProps) {
           x: point.x + i * 220,
           y: point.y,
           props: {
-            assetId,
+            assetId: asset.id,
             w: 200,
             h: 150,
           },
@@ -73,7 +69,26 @@ export default function GameCanvas({ onDrop }: GameCanvasProps) {
   }, [editor, onDrop]);
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full game-canvas">
+      <style jsx global>{`
+        /* Hide the style panel (color/fill picker) when select tool is active */
+        .game-canvas .tlui-style-panel__wrapper {
+          display: none !important;
+        }
+        /* Tone down the tldraw toolbar to not fight with our UI */
+        .game-canvas .tlui-layout {
+          --color-background: #0d1117;
+        }
+        /* Make tldraw's panels less prominent */
+        .game-canvas .tlui-toolbar,
+        .game-canvas .tlui-navigation-zone {
+          opacity: 0.85;
+        }
+        .game-canvas .tlui-toolbar:hover,
+        .game-canvas .tlui-navigation-zone:hover {
+          opacity: 1;
+        }
+      `}</style>
       <Tldraw onMount={handleMount} />
     </div>
   );

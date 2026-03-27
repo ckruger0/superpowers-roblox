@@ -16,12 +16,11 @@ const accentColors: Record<string, string> = {
 };
 
 function GDDCard({ section }: { section: GDDSection }) {
-  const [expanded, setExpanded] = useState(false);
   const color = accentColors[section.accent] ?? "#888";
 
   return (
     <div
-      className="rounded-lg p-3 cursor-pointer transition-all hover:scale-[1.02]"
+      className="rounded-lg p-2.5 transition-all"
       style={{
         background: "#0f3460",
         border:
@@ -29,9 +28,8 @@ function GDDCard({ section }: { section: GDDSection }) {
             ? "1px dashed #333"
             : `1px solid ${color}30`,
       }}
-      onClick={() => setExpanded(!expanded)}
     >
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-1.5 mb-1">
         <span
           className="text-[9px] font-bold uppercase tracking-wider"
           style={{ color }}
@@ -41,7 +39,7 @@ function GDDCard({ section }: { section: GDDSection }) {
         </span>
         {section.status === "drafting" && (
           <span
-            className="text-[8px] px-2 py-0.5 rounded-full"
+            className="text-[8px] px-1.5 py-0.5 rounded-full"
             style={{ background: `${color}20`, color }}
           >
             drafting...
@@ -49,7 +47,7 @@ function GDDCard({ section }: { section: GDDSection }) {
         )}
       </div>
       <div
-        className={`text-[11px] leading-relaxed ${
+        className={`text-[10px] leading-relaxed ${
           section.status === "empty"
             ? "text-gray-600 italic"
             : "text-[#c8d6e5]"
@@ -57,25 +55,17 @@ function GDDCard({ section }: { section: GDDSection }) {
       >
         {section.status === "empty"
           ? "Waiting for input..."
-          : expanded
-            ? section.content
-            : section.content.slice(0, 80) +
-              (section.content.length > 80 ? "..." : "")}
+          : section.content.slice(0, 60) +
+            (section.content.length > 60 ? "..." : "")}
       </div>
     </div>
   );
 }
 
 export default function GDDBentoBox({ gdd, visible }: GDDBentoBoxProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   if (!visible) return null;
-
-  const hasContent =
-    gdd.vision.status !== "empty" ||
-    gdd.mechanics.status !== "empty" ||
-    gdd.narrative.status !== "empty" ||
-    gdd.levelPlan.status !== "empty";
 
   const allLocked =
     gdd.vision.status === "locked" &&
@@ -83,43 +73,47 @@ export default function GDDBentoBox({ gdd, visible }: GDDBentoBoxProps) {
     gdd.narrative.status === "locked" &&
     gdd.levelPlan.status === "locked";
 
+  const hasContent =
+    gdd.vision.status !== "empty" ||
+    gdd.mechanics.status !== "empty" ||
+    gdd.narrative.status !== "empty" ||
+    gdd.levelPlan.status !== "empty";
+
   return (
-    <div
-      className="fixed bottom-0 left-4 right-[340px] z-40 bg-[#16213e] rounded-t-xl border border-b-0 transition-all"
-      style={{
-        borderColor: "#5ac8fa30",
-        boxShadow: "0 -4px 16px rgba(0,0,0,0.4)",
-      }}
-    >
-      {/* Header */}
+    <div className="flex-shrink-0 bg-[#16213e] border-t border-gray-800">
+      {/* Header - always visible */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-4 py-2"
-        style={{ background: "#5ac8fa10" }}
+        className="w-full flex items-center justify-between px-4 py-1.5 hover:bg-[#1a2744] transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-[#5ac8fa] text-sm font-semibold">
+          <span className="text-[#5ac8fa] text-xs font-semibold">
             {gdd.title} — Game Design Doc
           </span>
           {allLocked && (
-            <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#53d769]/20 text-[#53d769]">
+            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-[#53d769]/20 text-[#53d769]">
               locked
             </span>
           )}
           {hasContent && !allLocked && (
-            <span className="text-[9px] px-2 py-0.5 rounded-full bg-[#5ac8fa]/20 text-[#5ac8fa]">
-              drafting...
+            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-[#5ac8fa]/20 text-[#5ac8fa]">
+              drafting
+            </span>
+          )}
+          {!hasContent && (
+            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-gray-700/50 text-gray-500">
+              empty
             </span>
           )}
         </div>
-        <span className="text-gray-500 text-xs">
-          {isExpanded ? "▾ collapse" : "▴ expand"}
+        <span className="text-gray-500 text-[10px]">
+          {isExpanded ? "▾" : "▴"}
         </span>
       </button>
 
       {/* Bento grid */}
       {isExpanded && (
-        <div className="p-3 grid grid-cols-4 gap-2">
+        <div className="px-3 pb-2 grid grid-cols-4 gap-2">
           <GDDCard section={gdd.vision} />
           <GDDCard section={gdd.mechanics} />
           <GDDCard section={gdd.narrative} />

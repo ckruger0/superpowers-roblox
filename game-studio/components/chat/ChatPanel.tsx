@@ -37,7 +37,6 @@ export default function ChatPanel({ onStageChange }: ChatPanelProps) {
     setInput("");
     setIsStreaming(true);
 
-    // Create placeholder for assistant response
     const assistantId = crypto.randomUUID();
     setMessages((prev) => [
       ...prev,
@@ -86,12 +85,11 @@ export default function ChatPanel({ onStageChange }: ChatPanelProps) {
                 )
               );
             } catch {
-              // ignore parse errors from partial chunks
+              // ignore parse errors
             }
           } else if (line.startsWith("data: ") && eventType === "tool_call") {
             try {
               const data = JSON.parse(line.slice(6));
-              // Show tool call as status in the message
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantId
@@ -127,25 +125,20 @@ export default function ChatPanel({ onStageChange }: ChatPanelProps) {
     return (
       <button
         onClick={() => setIsCollapsed(false)}
-        className="fixed bottom-6 right-6 z-50 bg-[#16213e] border border-[#e94560]/40 rounded-full px-4 py-2 flex items-center gap-2 shadow-lg hover:border-[#e94560]/70 transition-colors"
+        className="w-10 flex-shrink-0 bg-[#16213e] border-l border-gray-800 flex flex-col items-center justify-center gap-2 hover:bg-[#1a2744] transition-colors"
       >
         <div className="w-2 h-2 rounded-full bg-[#e94560] animate-pulse" />
-        <span className="text-[#e94560] text-sm font-semibold">
-          Creative Director
+        <span className="text-[#e94560] text-[9px] font-semibold [writing-mode:vertical-lr] rotate-180">
+          Chat
         </span>
-        {messages.length > 0 && (
-          <span className="bg-[#e94560] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            {messages.filter((m) => m.role === "assistant").length}
-          </span>
-        )}
       </button>
     );
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-80 max-h-[500px] bg-[#16213e] border border-[#e94560]/40 rounded-xl shadow-2xl flex flex-col overflow-hidden">
+    <div className="w-80 flex-shrink-0 bg-[#16213e] border-l border-gray-800 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-[#e94560]/10 border-b border-[#e94560]/20">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-[#e94560] animate-pulse" />
           <span className="text-[#e94560] text-sm font-semibold">
@@ -156,15 +149,19 @@ export default function ChatPanel({ onStageChange }: ChatPanelProps) {
           onClick={() => setIsCollapsed(true)}
           className="text-gray-500 hover:text-gray-300 text-xs"
         >
-          collapse ▾
+          ▸
         </button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-[200px] max-h-[350px]">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {messages.length === 0 && (
-          <div className="text-gray-500 text-sm text-center py-8">
+          <div className="text-gray-500 text-sm text-center py-12 px-4 leading-relaxed">
             Tell me about the game you want to make!
+            <br />
+            <span className="text-gray-600 text-xs mt-2 block">
+              Drag images onto the canvas for inspiration, then describe your idea here.
+            </span>
           </div>
         )}
         {messages.map((msg) => (
@@ -185,7 +182,7 @@ export default function ChatPanel({ onStageChange }: ChatPanelProps) {
       </div>
 
       {/* Input */}
-      <div className="p-2 border-t border-gray-700">
+      <div className="p-2 border-t border-gray-800">
         <div className="flex items-center gap-2 bg-[#0f3460] rounded-lg px-3 py-2">
           <input
             value={input}
