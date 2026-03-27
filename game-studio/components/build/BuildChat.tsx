@@ -317,8 +317,39 @@ return "Camera: side angle"
 \`\`\`
 Then \`screen_capture\`.
 
-**Shot 4 (optional) — Close-up on newest objects:**
-Position camera near the most recently placed objects to check detail and scale.
+**Shot 4 — Close-up on each newly placed object (one per object):**
+For each object you just placed, focus the camera on it to check scale, detail, and fit:
+\`\`\`lua
+local cam = workspace.CurrentCamera
+local obj = workspace:FindFirstChild("OBJECT_NAME")
+if obj then
+    local pos
+    if obj:IsA("Model") then
+        local p = obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart")
+        if p then pos = p.Position end
+    else
+        pos = obj.Position
+    end
+    if pos then
+        -- Compute bounding box for framing distance
+        local min = Vector3.new(math.huge,math.huge,math.huge)
+        local max = Vector3.new(-math.huge,-math.huge,-math.huge)
+        for _, d in (obj:IsA("Model") and obj:GetDescendants() or {obj}) do
+            if d:IsA("BasePart") then
+                local p, h = d.Position, d.Size/2
+                min = Vector3.new(math.min(min.X,p.X-h.X),math.min(min.Y,p.Y-h.Y),math.min(min.Z,p.Z-h.Z))
+                max = Vector3.new(math.max(max.X,p.X+h.X),math.max(max.Y,p.Y+h.Y),math.max(max.Z,p.Z+h.Z))
+            end
+        end
+        local size = (max - min).Magnitude
+        local dist = math.max(size * 1.5, 10)
+        cam.CFrame = CFrame.lookAt(pos + Vector3.new(dist * 0.7, dist * 0.4, dist * 0.7), pos)
+        return string.format("Camera focused on %s (size: %.0f studs)", obj.Name, size)
+    end
+end
+return "Object not found"
+\`\`\`
+Then \`screen_capture\`. Evaluate: does this object look right? Is it the right scale for the scene? Is it a single item or did a whole pack get loaded? If it looks wrong, DELETE it and try a different Creator Store search.
 
 After reviewing ALL shots, be BRUTALLY HONEST — do NOT say "looks great" unless it actually does. Ask yourself:
 - Can a player (~5 studs tall) physically WALK through this scene without getting stuck?
