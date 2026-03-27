@@ -55,6 +55,15 @@ export default function CanvasToolbar({ editor, activeTool, onImageAdded }: Canv
 
     editor.createAssets([asset]);
 
+    // Get actual image dimensions to preserve aspect ratio
+    const assetProps = asset.props as { w?: number; h?: number };
+    const naturalW = assetProps.w || 200;
+    const naturalH = assetProps.h || 150;
+    const maxDim = 300;
+    const scale = Math.min(maxDim / naturalW, maxDim / naturalH, 1);
+    const w = Math.round(naturalW * scale);
+    const h = Math.round(naturalH * scale);
+
     const center = editor.getViewportScreenCenter();
     const pageCenter = editor.screenToPage(center);
     const shapeId = createShapeId();
@@ -62,9 +71,9 @@ export default function CanvasToolbar({ editor, activeTool, onImageAdded }: Canv
     editor.createShape({
       id: shapeId,
       type: "image",
-      x: pageCenter.x - 100,
-      y: pageCenter.y - 75,
-      props: { assetId: asset.id, w: 200, h: 150 },
+      x: pageCenter.x - w / 2,
+      y: pageCenter.y - h / 2,
+      props: { assetId: asset.id, w, h },
     });
 
     // Notify parent that an image was added (triggers AI directly)
