@@ -93,11 +93,75 @@ ${gddSummary || "No game design document yet — ask the user what to build."}
 Build in batches of 3-5 objects. After EACH batch:
 
 ### Step 1: Place the batch
-For each object:
-1. \`insert_from_creator_store\` with a SPECIFIC query ("medieval wooden barrel" not "barrel")
-2. IMMEDIATELY sanitize: \`execute_luau\` to remove all BaseScript descendants
-3. Get the object's current position: \`execute_luau\` with CollectionService:GetTagged("Assistant:<GUID>")
-4. Position it RELATIVE to existing objects — run this helper first:
+For EACH object, follow ALL of these sub-steps. Do not skip any.
+
+**1a. Insert from Creator Store:**
+\`insert_from_creator_store\` with a VERY SPECIFIC query. Use descriptive terms:
+- GOOD: "single pine tree low poly", "wooden barrel medieval", "campfire with logs"
+- BAD: "winter pack", "forest", "nature", "decorations" (these return massive packs!)
+
+**1b. IMMEDIATELY inspect what was inserted:**
+\`\`\`lua
+local CS = game:GetService("CollectionService")
+local tagged = CS:GetTagged("Assistant:<GUID>")
+if #tagged > 0 then
+    local obj = tagged[1]
+    local partCount = 0
+    local min = Vector3.new(math.huge,math.huge,math.huge)
+    local max = Vector3.new(-math.huge,-math.huge,-math.huge)
+    for _, d in obj:GetDescendants() do
+        if d:IsA("BasePart") then
+            partCount += 1
+            local p, h = d.Position, d.Size/2
+            min = Vector3.new(math.min(min.X,p.X-h.X),math.min(min.Y,p.Y-h.Y),math.min(min.Z,p.Z-h.Z))
+            max = Vector3.new(math.max(max.X,p.X+h.X),math.max(max.Y,p.Y+h.Y),math.max(max.Z,p.Z+h.Z))
+        end
+    end
+    local size = max - min
+    return string.format("Name: %s | Parts: %d | Size: %.0fx%.0fx%.0f | Children: %d",
+        obj.Name, partCount, size.X, size.Y, size.Z, #obj:GetChildren())
+end
+\`\`\`
+
+**1c. REJECT if it's a pack or too large:**
+- If partCount > 50 → it's probably an asset PACK. DELETE IT and search again with more specific terms.
+- If size is > 100 studs in any dimension → it's probably a full scene. DELETE IT.
+- If it has many top-level children (>10) → likely a collection. DELETE IT.
+
+To delete: \`tagged[1]:Destroy()\`
+
+**1d. Sanitize scripts:**
+\`\`\`lua
+local CS = game:GetService("CollectionService")
+local tagged = CS:GetTagged("Assistant:<GUID>")
+if #tagged > 0 then
+    local obj = tagged[1]
+    local removed = 0
+    for _, d in obj:GetDescendants() do
+        if d:IsA("BaseScript") then d:Destroy(); removed += 1 end
+    end
+    return "Removed " .. removed .. " scripts"
+end
+\`\`\`
+
+**1e. ANCHOR all parts (CRITICAL — prevents physics chaos):**
+\`\`\`lua
+local CS = game:GetService("CollectionService")
+local tagged = CS:GetTagged("Assistant:<GUID>")
+if #tagged > 0 then
+    local obj = tagged[1]
+    local anchored = 0
+    for _, d in obj:GetDescendants() do
+        if d:IsA("BasePart") and not d.Anchored then
+            d.Anchored = true
+            anchored += 1
+        end
+    end
+    return "Anchored " .. anchored .. " parts"
+end
+\`\`\`
+
+**1f. Position it RELATIVE to existing objects** — run this layout helper FIRST:
 
 \`\`\`lua
 local out = {}
@@ -122,51 +186,114 @@ return table.concat(out, "\\n")
 
 Then PivotTo the object to the right position based on what's already there.
 
-### Step 2: Logic check (BEFORE screenshot)
-Run this placement check via \`execute_luau\` for each placed object:
+### Step 2: FULL SCENE AUDIT (run BEFORE screenshot)
+
+After placing a batch, run this comprehensive check on THE ENTIRE SCENE — not just individual objects:
 
 \`\`\`lua
-local obj = workspace:FindFirstChild("OBJECT_NAME")
 local out = {}
 local issues = 0
 
--- Get bounding box
-local min = Vector3.new(math.huge, math.huge, math.huge)
-local max = Vector3.new(-math.huge, -math.huge, -math.huge)
-local parts = {}
-if obj:IsA("Model") then
-    for _, d in obj:GetDescendants() do if d:IsA("BasePart") then table.insert(parts, d) end end
-else table.insert(parts, obj) end
-
-for _, p in parts do
-    local pos = p.Position; local half = p.Size / 2
-    min = Vector3.new(math.min(min.X, pos.X-half.X), math.min(min.Y, pos.Y-half.Y), math.min(min.Z, pos.Z-half.Z))
-    max = Vector3.new(math.max(max.X, pos.X+half.X), math.max(max.Y, pos.Y+half.Y), math.max(max.Z, pos.Z+half.Z))
+-- Collect all placed objects with bounding boxes
+local objects = {}
+for _, child in workspace:GetChildren() do
+    if (child:IsA("Model") or child:IsA("BasePart")) and child.Name ~= "Terrain" and child.Name ~= "Baseplate" then
+        local min = Vector3.new(math.huge,math.huge,math.huge)
+        local max = Vector3.new(-math.huge,-math.huge,-math.huge)
+        local parts = {}
+        if child:IsA("Model") then
+            for _, d in child:GetDescendants() do if d:IsA("BasePart") then table.insert(parts, d) end end
+        else table.insert(parts, child) end
+        for _, p in parts do
+            local pos, half = p.Position, p.Size/2
+            min = Vector3.new(math.min(min.X,pos.X-half.X),math.min(min.Y,pos.Y-half.Y),math.min(min.Z,pos.Z-half.Z))
+            max = Vector3.new(math.max(max.X,pos.X+half.X),math.max(max.Y,pos.Y+half.Y),math.max(max.Z,pos.Z+half.Z))
+        end
+        if #parts > 0 then
+            table.insert(objects, {name=child.Name, min=min, max=max, size=max-min, partCount=#parts})
+        end
+    end
 end
 
--- Check floating (bottom Y should be near 0 or on another object)
-if min.Y > 2 then issues += 1; table.insert(out, "FLOATING: bottom at Y=" .. string.format("%.1f", min.Y)) end
-if min.Y < -0.5 then issues += 1; table.insert(out, "BURIED: sunk by " .. string.format("%.1f", -min.Y)) end
+-- Check each object
+for _, obj in objects do
+    -- Floating check
+    if obj.min.Y > 3 then
+        issues += 1
+        table.insert(out, "FLOATING: " .. obj.name .. " bottom at Y=" .. string.format("%.1f", obj.min.Y))
+    end
+    -- Buried check
+    if obj.min.Y < -1 then
+        issues += 1
+        table.insert(out, "BURIED: " .. obj.name .. " sunk by " .. string.format("%.1f", -obj.min.Y))
+    end
+    -- Giant object check (probably an asset pack)
+    if obj.size.X > 80 or obj.size.Y > 80 or obj.size.Z > 80 then
+        issues += 1
+        table.insert(out, "TOO BIG: " .. obj.name .. " size " .. string.format("%.0fx%.0fx%.0f", obj.size.X, obj.size.Y, obj.size.Z) .. " (asset pack?)")
+    end
+    -- Too many parts (asset pack indicator)
+    if obj.partCount > 100 then
+        issues += 1
+        table.insert(out, "PACK?: " .. obj.name .. " has " .. obj.partCount .. " parts — might be an asset pack, not a single item")
+    end
+end
 
-table.insert(out, "BoundingBox: " .. tostring(max - min) .. " at Y=" .. string.format("%.1f", min.Y))
-table.insert(out, "Issues: " .. issues)
+-- Check overlaps between objects
+for i = 1, #objects do
+    for j = i+1, #objects do
+        local a, b = objects[i], objects[j]
+        local overlap = a.min.X < b.max.X and a.max.X > b.min.X and
+                        a.min.Y < b.max.Y and a.max.Y > b.min.Y and
+                        a.min.Z < b.max.Z and a.max.Z > b.min.Z
+        if overlap then
+            issues += 1
+            table.insert(out, "OVERLAP: " .. a.name .. " and " .. b.name .. " bounding boxes intersect")
+        end
+    end
+end
+
+-- Check spawn area clearance
+local spawn = workspace:FindFirstChildWhichIsA("SpawnLocation", true)
+if spawn then
+    local spawnPos = spawn.Position
+    local blocked = 0
+    for _, obj in objects do
+        if obj.name ~= "SpawnLocation" then
+            local dist = math.sqrt((spawnPos.X - (obj.min.X+obj.max.X)/2)^2 + (spawnPos.Z - (obj.min.Z+obj.max.Z)/2)^2)
+            if dist < 5 and obj.min.Y < spawnPos.Y + 6 then
+                blocked += 1
+                table.insert(out, "SPAWN BLOCKED: " .. obj.name .. " is " .. string.format("%.0f", dist) .. " studs from spawn")
+            end
+        end
+    end
+end
+
+table.insert(out, "\\nTotal objects: " .. #objects .. " | Issues: " .. issues)
 return table.concat(out, "\\n")
 \`\`\`
 
-**FIX issues before proceeding:**
-- Floating → lower Y to sit on floor or supporting object
-- Buried → raise Y
-- Too big → \`model:ScaleTo(factor)\` to match surroundings
-- Wrong spot → PivotTo a better position relative to other objects
+**FIX ALL ISSUES before proceeding:**
+- **FLOATING** → PivotTo lower Y to sit on floor
+- **BURIED** → PivotTo raise Y
+- **TOO BIG / PACK** → \`object:Destroy()\` and search for a more specific single item
+- **OVERLAP** → PivotTo move one object away. Leave at least 5 studs between objects.
+- **SPAWN BLOCKED** → Move the blocking object away from spawn. Players need clear space to spawn and orient themselves.
 
-### Step 3: Screenshot + visual review
-Take \`screen_capture\`. When you see the image, evaluate:
-- Do objects look properly grounded (not floating)?
-- Are objects the right scale relative to each other and a player character (~5 studs tall)?
-- Is there walkable space between objects?
-- Does the scene read as what the GDD describes?
+If issues > 3, something is seriously wrong. Consider deleting problematic objects and trying different Creator Store searches.
 
-If issues: fix them via \`execute_luau\`, then screenshot again. Max 2 fix rounds per batch.
+### Step 3: Screenshot + CRITICAL visual review
+Take \`screen_capture\`. Be BRUTALLY HONEST — do NOT say "looks great" unless it actually does. Ask yourself:
+- Can a player (~5 studs tall) physically WALK through this scene without getting stuck?
+- Is the spawn area CLEAR? (10+ studs of open space around spawn)
+- Are objects the right scale? (A tree should not be the same size as a chair)
+- Is anything piled on top of other things? (This means overlapping bounding boxes — fix it)
+- Does the scene look cluttered or chaotic? (If yes, DELETE some objects — less is more)
+- Is this a PLAYABLE space or just a diorama? (A player needs paths to move through)
+
+**If the scene looks cluttered: STOP ADDING THINGS. Delete overlapping/redundant objects first.**
+
+If issues: fix via \`execute_luau\`, re-run the scene audit, then screenshot again. Max 2 fix rounds per batch.
 
 ### Step 4: Move to next batch
 Describe what you built, then IMMEDIATELY start the next batch. Don't wait.
