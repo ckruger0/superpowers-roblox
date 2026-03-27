@@ -210,28 +210,34 @@ IMPORTANT: Respond with valid JSON only:
     // Listen for document changes (new shapes, shape edits)
     const unsubDoc = editor.store.listen(
       () => {
+        const allShapes = editor.getCurrentPageShapes();
+        console.log("[doc] shapes:", allShapes.length, allShapes.map(s => ({ type: s.type, props: s.props })));
+
         const items = extractCanvasContext(editor);
+        console.log("[doc] extracted items:", items.length, items);
+        console.log("[doc] lastItemCount:", lastItemCountRef.current);
+
         if (items.length !== lastItemCountRef.current && items.length > 0) {
           lastItemCountRef.current = items.length;
-          // Mark that we have a pending trigger — the newest item
           const newest = items[items.length - 1];
           pendingTriggerRef.current = newest?.id ?? null;
+          console.log("[doc] pending trigger set:", pendingTriggerRef.current);
         }
       },
       { source: "user", scope: "document" }
     );
 
-    // Listen for selection changes (session scope) — this is how we detect deselection
+    // Listen for selection changes (session scope)
     const unsubSession = editor.store.listen(
       () => {
         const selectedIds = editor.getSelectedShapeIds();
+        console.log("[session] selected:", selectedIds.length, "pending:", pendingTriggerRef.current);
 
-        // User just deselected everything AND we have a pending trigger
         if (selectedIds.length === 0 && pendingTriggerRef.current) {
           const triggerId = pendingTriggerRef.current;
           pendingTriggerRef.current = null;
+          console.log("[session] FIRING AI for:", triggerId);
 
-          // Debounce to let things settle
           if (debounceRef.current) clearTimeout(debounceRef.current);
           debounceRef.current = setTimeout(() => {
             askAI(triggerId);

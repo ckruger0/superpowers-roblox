@@ -7,6 +7,49 @@ export interface CanvasItem {
   position: { x: number; y: number };
 }
 
+// tldraw v3 uses richText (ProseMirror doc format) instead of plain text
+function extractTextFromRichText(richText: unknown): string {
+  if (!richText || typeof richText !== "object") return "";
+
+  const rt = richText as { type?: string; content?: unknown[]; text?: string };
+
+  // If it has a direct text field, use it
+  if (typeof rt.text === "string") return rt.text;
+
+  // ProseMirror doc structure: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "..." }] }] }
+  if (rt.type === "doc" && Array.isArray(rt.content)) {
+    const texts: string[] = [];
+    for (const block of rt.content) {
+      const b = block as { type?: string; content?: unknown[] };
+      if (Array.isArray(b.content)) {
+        for (const inline of b.content) {
+          const i = inline as { text?: string };
+          if (typeof i.text === "string") {
+            texts.push(i.text);
+          }
+        }
+      }
+      texts.push("\n");
+    }
+    return texts.join("").trim();
+  }
+
+  return "";
+}
+
+function getShapeText(props: Record<string, unknown>): string {
+  // Try richText first (tldraw v3+)
+  if (props.richText) {
+    const text = extractTextFromRichText(props.richText);
+    if (text) return text;
+  }
+  // Fall back to plain text prop (older tldraw)
+  if (typeof props.text === "string") {
+    return props.text.trim();
+  }
+  return "";
+}
+
 export function extractCanvasContext(editor: Editor): CanvasItem[] {
   const items: CanvasItem[] = [];
 
@@ -16,13 +59,15 @@ export function extractCanvasContext(editor: Editor): CanvasItem[] {
       ? { x: Math.round(bounds.x), y: Math.round(bounds.y) }
       : { x: 0, y: 0 };
 
-    if (shape.type === "text") {
-      const props = shape.props as { text?: string };
-      if (props.text?.trim()) {
+    const props = shape.props as Record<string, unknown>;
+    const textContent = getShapeText(props);
+
+    if (shape.type === "text" || shape.type === "note" || shape.type === "geo") {
+      if (textContent) {
         items.push({
           id: shape.id,
           type: "text",
-          content: props.text.trim(),
+          content: textContent,
           position: pos,
         });
       }
@@ -38,6 +83,14 @@ export function extractCanvasContext(editor: Editor): CanvasItem[] {
         id: shape.id,
         type: "drawing",
         content: "(freehand drawing)",
+        position: pos,
+      });
+    } else if (textContent) {
+      // Catch-all: any shape with text
+      items.push({
+        id: shape.id,
+        type: "text",
+        content: textContent,
         position: pos,
       });
     }
