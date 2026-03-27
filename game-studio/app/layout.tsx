@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Game Studio",
+  title: "Pepe Silvia x Roblox",
   description: "AI game studio for Roblox",
 };
 
