@@ -70,7 +70,7 @@ export default function Home() {
       <div className="h-12 flex-shrink-0 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-5 z-50">
         {/* Left: project name */}
         <div className="flex items-center gap-2">
-          <img src="/pepe_silvia_logo.png" alt="Pepe Silvia" className="h-6 w-6 rounded" />
+          <img src="/pepe_silvia_logo.png" alt="Pepe Silvia" className="h-6 w-auto" />
           <span className="text-neutral-200 font-semibold text-sm tracking-tight">
             Pepe Silvia
           </span>
