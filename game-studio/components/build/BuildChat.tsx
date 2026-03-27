@@ -111,10 +111,10 @@ Keep messages concise. Show your work visually.`;
       const decoder = new TextDecoder();
       if (!reader) return;
 
-      const assistantId = crypto.randomUUID();
+      let currentAssistantId = crypto.randomUUID();
       setMessages((prev) => [
         ...prev,
-        { id: assistantId, role: "assistant", content: "", type: "text" },
+        { id: currentAssistantId, role: "assistant", content: "", type: "text" },
       ]);
 
       let buffer = "";
@@ -134,10 +134,17 @@ Keep messages concise. Show your work visually.`;
             try {
               const data = JSON.parse(line.slice(6));
 
-              if (eventType === "text") {
+              if (eventType === "new_message") {
+                // Create a new message bubble for the next chunk of text
+                currentAssistantId = crypto.randomUUID();
+                setMessages((prev) => [
+                  ...prev,
+                  { id: currentAssistantId, role: "assistant", content: "", type: "text" },
+                ]);
+              } else if (eventType === "text") {
                 setMessages((prev) =>
                   prev.map((m) =>
-                    m.id === assistantId
+                    m.id === currentAssistantId
                       ? { ...m, content: m.content + data.text }
                       : m
                   )
@@ -206,10 +213,10 @@ Keep messages concise. Show your work visually.`;
       const decoder = new TextDecoder();
       if (!reader) return;
 
-      const assistantId = crypto.randomUUID();
+      let currentAssistantId = crypto.randomUUID();
       setMessages((prev) => [
         ...prev,
-        { id: assistantId, role: "assistant", content: "", type: "text" },
+        { id: currentAssistantId, role: "assistant", content: "", type: "text" },
       ]);
 
       let buffer = "";
@@ -225,27 +232,31 @@ Keep messages concise. Show your work visually.`;
         for (const line of lines) {
           if (line.startsWith("event: ")) {
             eventType = line.slice(7);
-          } else if (line.startsWith("data: ") && eventType === "text") {
+          } else if (line.startsWith("data: ")) {
             try {
               const data = JSON.parse(line.slice(6));
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantId
-                    ? { ...m, content: m.content + data.text }
-                    : m
-                )
-              );
-            } catch {
-              // partial
-            }
-          } else if (line.startsWith("data: ") && eventType === "tool_call") {
-            try {
-              const data = JSON.parse(line.slice(6));
-              addMessage({
-                role: "system",
-                content: friendlyToolMessage(data.name),
-                type: "status",
-              });
+
+              if (eventType === "new_message") {
+                currentAssistantId = crypto.randomUUID();
+                setMessages((prev) => [
+                  ...prev,
+                  { id: currentAssistantId, role: "assistant", content: "", type: "text" },
+                ]);
+              } else if (eventType === "text") {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === currentAssistantId
+                      ? { ...m, content: m.content + data.text }
+                      : m
+                  )
+                );
+              } else if (eventType === "tool_call") {
+                addMessage({
+                  role: "system",
+                  content: friendlyToolMessage(data.name),
+                  type: "status",
+                });
+              }
             } catch {
               // partial
             }

@@ -25,6 +25,7 @@ export interface StreamCallbacks {
   onText: (text: string) => void;
   onToolCall: (name: string, input: Record<string, unknown>) => void;
   onToolResult: (name: string, result: unknown) => void;
+  onNewMessage: () => void; // Called when Claude starts a new text response (after tool calls)
   onDone: (fullResponse: string) => void;
   onError: (error: Error) => void;
 }
@@ -52,9 +53,15 @@ export async function streamConversation(
 
   let currentMessages = [...messages];
   let fullResponse = "";
+  let isFirstIteration = true;
 
   // Conversation loop — keeps going until Claude stops calling tools
   while (true) {
+    // Signal new message bubble for each iteration after the first
+    if (!isFirstIteration) {
+      callbacks.onNewMessage();
+    }
+    isFirstIteration = false;
     const stream = anthropic.messages.stream({
       model: "claude-sonnet-4-20250514",
       max_tokens: 8192,

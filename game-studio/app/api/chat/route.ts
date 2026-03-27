@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
         onText: (text) => send("text", { text }),
         onToolCall: (name, input) => send("tool_call", { name, input }),
         onToolResult: (name, result) => send("tool_result", { name, result }),
+        onNewMessage: () => send("new_message", {}),
         onDone: (fullResponse) => {
           send("done", { fullResponse });
           controller.close();
