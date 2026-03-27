@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useState, useEffect, useCallback } from "react";
 import GDDFullView from "@/components/gdd/GDDFullView";
+import BuildChat from "@/components/build/BuildChat";
 import type { GameDesignDoc, McpStatus } from "@/lib/types";
 
 function emptyGDD(): GameDesignDoc {
@@ -114,9 +115,9 @@ export default function Home() {
           <GDDFullView gdd={gdd} onUpdate={handleGddUpdate} />
         )}
 
-        {/* Create: canvas in build mode (for now, same as ideate) */}
+        {/* Create: build chat with Roblox Studio */}
         {activeTab === "create" && (
-          <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} />
+          <BuildChat gdd={gdd} />
         )}
       </div>
     </div>
