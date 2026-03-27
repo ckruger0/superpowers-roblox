@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useState, useEffect, useCallback } from "react";
-import GDDBentoBox from "@/components/gdd/GDDBentoBox";
+import GDDFullView from "@/components/gdd/GDDFullView";
 import type { GameDesignDoc, McpStatus } from "@/lib/types";
 
 function emptyGDD(): GameDesignDoc {
@@ -31,9 +31,12 @@ const GameCanvas = dynamic(() => import("@/components/canvas/GameCanvas"), {
   ),
 });
 
+type Tab = "ideate" | "design" | "create";
+
 export default function Home() {
   const [gdd, setGdd] = useState<GameDesignDoc>(emptyGDD());
   const [mcpStatus, setMcpStatus] = useState<McpStatus>({ connected: false });
+  const [activeTab, setActiveTab] = useState<Tab>("ideate");
 
   useEffect(() => {
     fetch("/api/mcp/status")
@@ -62,33 +65,60 @@ export default function Home() {
 
   return (
     <div className="h-screen w-screen bg-neutral-950 overflow-hidden flex flex-col">
-      {/* Minimal top bar */}
-      <div className="h-9 flex-shrink-0 bg-neutral-900/80 border-b border-neutral-800/50 flex items-center justify-between px-4 z-50">
-        <div className="flex items-center gap-2.5">
-          <span className="text-neutral-300 font-medium text-xs tracking-tight">
-            Game Studio
-          </span>
-          <div className="w-px h-3.5 bg-neutral-800" />
-          <div className="flex items-center gap-1.5">
-            <div
-              className={`w-1.5 h-1.5 rounded-full ${
-                mcpStatus.connected ? "bg-emerald-400" : "bg-neutral-600"
+      {/* Top navbar */}
+      <div className="h-12 flex-shrink-0 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-5 z-50">
+        {/* Left: project name */}
+        <span className="text-neutral-200 font-semibold text-sm tracking-tight">
+          Pepe Silvia
+        </span>
+
+        {/* Center: tab switcher */}
+        <div className="flex items-center gap-0.5 bg-neutral-800/60 rounded-lg p-0.5">
+          {(["ideate", "design", "create"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-1 rounded-md text-xs font-medium capitalize transition-colors ${
+                activeTab === tab
+                  ? "bg-neutral-700 text-white shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-300"
               }`}
-            />
-            <span className="text-neutral-600 text-[10px]">
-              {mcpStatus.connected ? "Studio" : "No Studio"}
-            </span>
-          </div>
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Right: studio connection */}
+        <div className="flex items-center gap-1.5">
+          <div
+            className={`w-2 h-2 rounded-full ${
+              mcpStatus.connected ? "bg-emerald-400" : "bg-neutral-600"
+            }`}
+          />
+          <span className="text-neutral-500 text-xs">
+            {mcpStatus.connected ? "Studio Connected" : "No Studio"}
+          </span>
         </div>
       </div>
 
-      {/* Canvas fills everything */}
+      {/* Content area */}
       <div className="flex-1 overflow-hidden relative">
-        <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} />
-      </div>
+        {/* Ideate: canvas */}
+        {activeTab === "ideate" && (
+          <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} />
+        )}
 
-      {/* GDD bottom bar */}
-      <GDDBentoBox gdd={gdd} visible={true} />
+        {/* Design: full-screen GDD */}
+        {activeTab === "design" && (
+          <GDDFullView gdd={gdd} onUpdate={handleGddUpdate} />
+        )}
+
+        {/* Create: canvas in build mode (for now, same as ideate) */}
+        {activeTab === "create" && (
+          <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} />
+        )}
+      </div>
     </div>
   );
 }
