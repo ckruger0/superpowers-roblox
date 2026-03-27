@@ -1,8 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useEffect } from "react";
-import ChatPanel from "@/components/chat/ChatPanel";
+import { useState, useEffect, useCallback } from "react";
 import GDDBentoBox from "@/components/gdd/GDDBentoBox";
 import type { GameDesignDoc, McpStatus } from "@/lib/types";
 
@@ -34,7 +33,6 @@ const GameCanvas = dynamic(() => import("@/components/canvas/GameCanvas"), {
 
 export default function Home() {
   const [gdd, setGdd] = useState<GameDesignDoc>(emptyGDD());
-  const [stage, setStage] = useState<1 | 2 | 3>(1);
   const [mcpStatus, setMcpStatus] = useState<McpStatus>({ connected: false });
 
   useEffect(() => {
@@ -44,46 +42,49 @@ export default function Home() {
       .catch(() => setMcpStatus({ connected: false, error: "Backend unreachable" }));
   }, []);
 
+  const handleGddUpdate = useCallback(
+    (section: string, content: string, status: string) => {
+      setGdd((prev) => {
+        const key = section as keyof Pick<GameDesignDoc, "vision" | "mechanics" | "narrative" | "levelPlan">;
+        if (!prev[key]) return prev;
+        return {
+          ...prev,
+          [key]: {
+            ...prev[key],
+            content,
+            status: status as "empty" | "drafting" | "locked",
+          },
+        };
+      });
+    },
+    []
+  );
+
   return (
     <div className="h-screen w-screen bg-neutral-950 overflow-hidden flex flex-col">
-      {/* Top bar */}
-      <div className="h-10 flex-shrink-0 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-4 z-50">
-        <div className="flex items-center gap-3">
-          <span className="text-white font-semibold text-sm tracking-tight">Game Studio</span>
-          <div className="w-px h-4 bg-neutral-700" />
+      {/* Minimal top bar */}
+      <div className="h-9 flex-shrink-0 bg-neutral-900/80 border-b border-neutral-800/50 flex items-center justify-between px-4 z-50">
+        <div className="flex items-center gap-2.5">
+          <span className="text-neutral-300 font-medium text-xs tracking-tight">
+            Game Studio
+          </span>
+          <div className="w-px h-3.5 bg-neutral-800" />
           <div className="flex items-center gap-1.5">
             <div
               className={`w-1.5 h-1.5 rounded-full ${
-                mcpStatus.connected ? "bg-emerald-400" : "bg-red-400"
+                mcpStatus.connected ? "bg-emerald-400" : "bg-neutral-600"
               }`}
             />
-            <span className="text-neutral-500 text-[11px]">
-              {mcpStatus.connected ? "Studio Connected" : "Studio Disconnected"}
+            <span className="text-neutral-600 text-[10px]">
+              {mcpStatus.connected ? "Studio" : "No Studio"}
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-0.5">
-          {([1, 2, 3] as const).map((s) => (
-            <div
-              key={s}
-              className={`px-2.5 py-1 rounded text-[11px] font-medium transition-colors ${
-                s === stage
-                  ? "bg-white/10 text-white"
-                  : "text-neutral-600 hover:text-neutral-400"
-              }`}
-            >
-              {s === 1 ? "Ideate" : s === 2 ? "Design" : "Build"}
-            </div>
-          ))}
-        </div>
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 relative">
-          <GameCanvas />
-        </div>
-        <ChatPanel onStageChange={setStage} />
+      {/* Canvas fills everything */}
+      <div className="flex-1 overflow-hidden relative">
+        <GameCanvas onGddUpdate={handleGddUpdate} />
       </div>
 
       {/* GDD bottom bar */}
