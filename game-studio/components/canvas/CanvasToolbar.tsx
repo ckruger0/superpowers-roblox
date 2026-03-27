@@ -162,14 +162,13 @@ export default function CanvasToolbar({ editor, activeTool, onImageAdded }: Canv
 
         <div className="w-px h-5 bg-neutral-700 mx-0.5" />
 
-        {/* Draw */}
+        {/* Creation tools — grouped */}
         <ToolButton active={activeTool === "draw"} onClick={() => setTool("draw")} title="Draw (D)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5z" />
           </svg>
         </ToolButton>
 
-        {/* Text */}
         <ToolButton active={activeTool === "text"} onClick={() => setTool("text")} title="Text (T)">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="4 7 4 4 20 4 20 7" />
@@ -178,9 +177,6 @@ export default function CanvasToolbar({ editor, activeTool, onImageAdded }: Canv
           </svg>
         </ToolButton>
 
-        <div className="w-px h-5 bg-neutral-700 mx-0.5" />
-
-        {/* Image upload */}
         <ToolButton active={false} onClick={() => fileInputRef.current?.click()} title="Add Image">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -189,7 +185,6 @@ export default function CanvasToolbar({ editor, activeTool, onImageAdded }: Canv
           </svg>
         </ToolButton>
 
-        {/* Voice input */}
         <ToolButton active={isListening} onClick={toggleVoice} title="Voice to Text">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" />
