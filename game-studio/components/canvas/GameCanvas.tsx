@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Tldraw, Editor, TLShapeId, TLComponents, createShapeId } from "tldraw";
+import { Tldraw, Editor, TLShapeId, TLComponents, createShapeId, createBindingId } from "tldraw";
 import "tldraw/tldraw.css";
 import AIBubble, { QuickReply } from "./AIBubble";
 import CanvasToolbar from "./CanvasToolbar";
@@ -193,36 +193,56 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd, theme }:
     [editor]
   );
 
-  // Draw a dotted line between two shapes
+  // Draw a dotted line between two shapes, bound so it follows them when dragged
   const connectShapes = useCallback(
     (fromId: string, toId: string) => {
       if (!editor) return;
 
       try {
-        const fromBounds = editor.getShapePageBounds(fromId as TLShapeId);
-        const toBounds = editor.getShapePageBounds(toId as TLShapeId);
-        if (!fromBounds || !toBounds) return;
+        // Verify both shapes exist
+        const fromShape = editor.getShape(fromId as TLShapeId);
+        const toShape = editor.getShape(toId as TLShapeId);
+        if (!fromShape || !toShape) return;
 
-        // Calculate center points
-        const fromX = fromBounds.x + fromBounds.width / 2;
-        const fromY = fromBounds.y + fromBounds.height / 2;
-        const toX = toBounds.x + toBounds.width / 2;
-        const toY = toBounds.y + toBounds.height / 2;
-
+        // Create the arrow shape
         const arrowId = createShapeId();
         editor.createShape({
           id: arrowId,
           type: "arrow",
-          x: fromX,
-          y: fromY,
           props: {
             dash: "dotted",
-            color: "light-violet",
+            color: "light-violet" as TldrawColor,
             size: "s",
-            start: { x: 0, y: 0 },
-            end: { x: toX - fromX, y: toY - fromY },
             arrowheadEnd: "none",
             arrowheadStart: "none",
+          },
+        });
+
+        // Bind start to fromShape
+        editor.createBinding({
+          id: createBindingId(),
+          type: "arrow",
+          fromId: arrowId,
+          toId: fromId as TLShapeId,
+          props: {
+            terminal: "start",
+            normalizedAnchor: { x: 0.5, y: 0.5 },
+            isExact: false,
+            isPrecise: false,
+          },
+        });
+
+        // Bind end to toShape
+        editor.createBinding({
+          id: createBindingId(),
+          type: "arrow",
+          fromId: arrowId,
+          toId: toId as TLShapeId,
+          props: {
+            terminal: "end",
+            normalizedAnchor: { x: 0.5, y: 0.5 },
+            isExact: false,
+            isPrecise: false,
           },
         });
 
