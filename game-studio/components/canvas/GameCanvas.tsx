@@ -92,11 +92,11 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd, theme }:
     [editor]
   );
 
-  // Place a text note on the canvas near an anchor shape
   type TldrawColor = "violet" | "black" | "grey" | "blue" | "red" | "green" | "yellow" | "orange" | "light-violet" | "light-blue" | "light-green" | "light-red" | "white";
 
-  const placeNoteOnCanvas = useCallback(
-    (text: string, nearShapeId?: string, color: TldrawColor = "violet"): string | null => {
+  // Place a user reply as plain text on the canvas
+  const placeReplyOnCanvas = useCallback(
+    (text: string, nearShapeId?: string): string | null => {
       if (!editor) return null;
 
       let x = 200;
@@ -105,12 +105,10 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd, theme }:
       if (nearShapeId) {
         const bounds = editor.getShapePageBounds(nearShapeId as TLShapeId);
         if (bounds) {
-          // Place to the right and slightly below the anchor
           x = bounds.x + bounds.width + 40;
           y = bounds.y + 20;
         }
       } else {
-        // Place near center of viewport
         const center = editor.getViewportScreenCenter();
         const pageCenter = editor.screenToPage(center);
         x = pageCenter.x;
@@ -130,15 +128,66 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd, theme }:
               { type: "paragraph", content: [{ type: "text", text }] },
             ],
           },
-          color,
+          color: "black" as TldrawColor,
           size: "s",
           autoSize: true,
         },
       });
 
-      // Don't let this trigger the AI watcher
       lastItemCountRef.current = extractCanvasContext(editor).length;
+      return shapeId;
+    },
+    [editor]
+  );
 
+  // Place an AI decision note as a styled card (geo shape with fill)
+  const placeDecisionOnCanvas = useCallback(
+    (text: string, nearShapeId?: string): string | null => {
+      if (!editor) return null;
+
+      let x = 200;
+      let y = 200;
+
+      if (nearShapeId) {
+        const bounds = editor.getShapePageBounds(nearShapeId as TLShapeId);
+        if (bounds) {
+          x = bounds.x + bounds.width + 50;
+          y = bounds.y;
+        }
+      } else {
+        const center = editor.getViewportScreenCenter();
+        const pageCenter = editor.screenToPage(center);
+        x = pageCenter.x;
+        y = pageCenter.y;
+      }
+
+      // Use a geo shape (rounded rectangle) with light-violet fill for AI decisions
+      const shapeId = createShapeId();
+      editor.createShape({
+        id: shapeId,
+        type: "geo",
+        x,
+        y,
+        props: {
+          w: Math.max(100, text.length * 7 + 24),
+          h: 36,
+          geo: "rectangle",
+          color: "violet" as TldrawColor,
+          fill: "semi",
+          dash: "draw",
+          size: "s",
+          richText: {
+            type: "doc",
+            content: [
+              { type: "paragraph", attrs: { dir: "auto" }, content: [{ type: "text", text: `✓ ${text}` }] },
+            ],
+          },
+          verticalAlign: "middle",
+          align: "middle",
+        },
+      });
+
+      lastItemCountRef.current = extractCanvasContext(editor).length;
       return shapeId;
     },
     [editor]
@@ -271,16 +320,22 @@ IMPORTANT: Respond with valid JSON only:
   "gddUpdates": [{"section": "vision|mechanics|narrative|levelPlan", "content": "...", "status": "drafting|locked"}] or null
 }
 
-## When to add canvasNotes
-- When a decision is made (user picks a mechanic, confirms a vibe), add a short summary note to the canvas near the relevant item
-- When you notice a theme or connection, add a label that names it ("volcano theme", "rising tension")
-- Keep notes SHORT — 2-5 words. They're labels on a moodboard, not paragraphs.
-- Don't add notes for every response — only when something is worth pinning to the canvas.
+## When to add canvasNotes — BE VERY SELECTIVE
+Only add a canvasNote when a FIRM DECISION is made — the user explicitly confirms something. Examples:
+- User confirms "yes, rising lava" → add note "Rising lava ✓"
+- User picks "volcano escape" as the story → add note "Volcano escape ✓"
 
-## When to add connections
-- When two canvas items are related (e.g., a volcano image + "lava obby" text)
-- When a user's reply connects two ideas
-- Use the actual item IDs from the canvas listing above.`;
+Do NOT add notes for:
+- Your own questions or suggestions
+- Vague or tentative ideas
+- Things the user just mentioned but hasn't committed to
+- Restating what the user already wrote on the canvas
+
+Most responses should have canvasNotes: null. Only 1 in 4-5 interactions should pin something.
+Keep notes to 2-4 words max.
+
+## When to add connections — BE SELECTIVE
+Only connect items when the user explicitly links two ideas, or when a confirmed decision ties back to something on the canvas. Don't connect everything — a few meaningful lines are better than a web of clutter. Most responses should have connections: null.`;
 
       const userMessage = triggerDesc;
       conversationRef.current.push({ role: "user", content: userMessage });
@@ -378,7 +433,7 @@ IMPORTANT: Respond with valid JSON only:
           const newNoteIds: Record<string, string> = {};
           if (canvasNotes) {
             for (const note of canvasNotes) {
-              const noteId = placeNoteOnCanvas(note.text, note.nearItemId);
+              const noteId = placeDecisionOnCanvas(note.text, note.nearItemId);
               if (noteId && note.nearItemId) {
                 newNoteIds[note.text] = noteId;
                 // Connect the note to the item it's near
@@ -493,7 +548,7 @@ IMPORTANT: Respond with valid JSON only:
 
   const handleBubbleReply = (text: string) => {
     // Place the user's reply on the canvas near the bubble's anchor
-    const replyNoteId = placeNoteOnCanvas(text, bubble?.anchorId, "black");
+    const replyNoteId = placeReplyOnCanvas(text, bubble?.anchorId);
     if (replyNoteId && bubble?.anchorId) {
       connectShapes(bubble.anchorId, replyNoteId);
     }
