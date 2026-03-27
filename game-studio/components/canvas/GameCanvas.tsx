@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Tldraw, Editor, TLShapeId, TLComponents } from "tldraw";
 import "tldraw/tldraw.css";
 import AIBubble, { QuickReply } from "./AIBubble";
+import CanvasToolbar from "./CanvasToolbar";
 import { extractCanvasContext, buildCanvasPrompt } from "@/lib/canvas-context";
 import type { GameDesignDoc } from "@/lib/types";
 
@@ -31,7 +32,7 @@ interface GameCanvasProps {
   gdd?: GameDesignDoc;
 }
 
-// Hide most of tldraw's UI — we only want select, draw, text
+// Hide ALL of tldraw's built-in UI — we provide our own toolbar
 const components: TLComponents = {
   StylePanel: null,
   NavigationPanel: null,
@@ -43,12 +44,19 @@ const components: TLComponents = {
   HelpMenu: null,
   QuickActions: null,
   SharePanel: null,
+  Toolbar: null,
+  KeyboardShortcutsDialog: null,
+  HelperButtons: null,
+  MenuPanel: null,
+  Minimap: null,
+  ZoomMenu: null,
 };
 
 export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd }: GameCanvasProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [bubble, setBubble] = useState<BubbleState | null>(null);
   const [isThinking, setIsThinking] = useState(false);
+  const [activeTool, setActiveTool] = useState("select");
   const [, setHistory] = useState<HistoryEntry[]>([]);
   const conversationRef = useRef<Array<{ role: string; content: string }>>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -57,6 +65,15 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd }: GameCa
   const handleMount = useCallback((editor: Editor) => {
     setEditor(editor);
     editor.user.updateUserPreferences({ colorScheme: "dark" });
+
+    // Track active tool changes
+    editor.store.listen(
+      () => {
+        const tool = editor.getCurrentToolId();
+        setActiveTool(tool);
+      },
+      { source: "user", scope: "session" }
+    );
   }, []);
 
   const getShapeScreenPos = useCallback(
@@ -308,25 +325,11 @@ IMPORTANT: Respond with valid JSON only:
   return (
     <div className="w-full h-full relative">
       <style jsx global>{`
-        /* Hide tldraw panels we replaced */
         .tlui-style-panel__wrapper,
         .tlui-menu-zone,
-        .tlui-helper-buttons {
-          display: none !important;
-        }
-        /* Only show select, hand, draw, text, and asset tools */
-        .tlui-toolbar .tlui-toolbar__tools {
-          gap: 2px;
-        }
-        /* Hide tools we don't want */
-        .tlui-toolbar .tlui-toolbar__tools button[data-testid="tools.eraser"],
-        .tlui-toolbar .tlui-toolbar__tools button[data-testid="tools.arrow"],
-        .tlui-toolbar .tlui-toolbar__tools button[data-testid="tools.laser"],
-        .tlui-toolbar .tlui-toolbar__tools button[data-testid="tools.frame"],
-        .tlui-toolbar .tlui-toolbar__tools button[data-testid="tools.highlight"],
-        .tlui-toolbar .tlui-toolbar__tools button[data-testid="tools.note"],
-        .tlui-toolbar .tlui-toolbar__extras,
-        .tlui-toolbar__overflow {
+        .tlui-helper-buttons,
+        .tlui-toolbar,
+        .tlui-navigation-zone {
           display: none !important;
         }
       `}</style>
@@ -336,6 +339,9 @@ IMPORTANT: Respond with valid JSON only:
         onMount={handleMount}
         components={components}
       />
+
+      {/* Custom toolbar */}
+      <CanvasToolbar editor={editor} activeTool={activeTool} />
 
       {/* AI thinking indicator */}
       {isThinking && (
