@@ -81,6 +81,27 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange, onNavigateToC
       },
       { source: "user", scope: "session" }
     );
+
+    // Auto-resize images that are too large when they're added
+    const MAX_IMAGE_DIM = 350;
+    editor.sideEffects.registerAfterCreateHandler("shape", (shape) => {
+      if (shape.type === "image") {
+        const props = shape.props as { w?: number; h?: number };
+        const w = props.w ?? 0;
+        const h = props.h ?? 0;
+        if (w > MAX_IMAGE_DIM || h > MAX_IMAGE_DIM) {
+          const scale = Math.min(MAX_IMAGE_DIM / w, MAX_IMAGE_DIM / h);
+          editor.updateShape({
+            id: shape.id,
+            type: "image",
+            props: {
+              w: Math.round(w * scale),
+              h: Math.round(h * scale),
+            },
+          });
+        }
+      }
+    });
   }, []);
 
   const getShapeScreenPos = useCallback(
