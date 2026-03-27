@@ -169,12 +169,39 @@ IMPORTANT: Respond with valid JSON only:
       const userMessage = triggerDesc;
       conversationRef.current.push({ role: "user", content: userMessage });
 
+      // Build multimodal content — text + any images on the canvas
+      const messageContent: Array<{ type: string; text?: string; source?: { type: string; media_type: string; data: string } }> = [];
+
+      // Add the text prompt
+      messageContent.push({
+        type: "text",
+        text: systemPrompt + "\n\nTrigger: " + userMessage,
+      });
+
+      // Attach images from canvas as vision content
+      for (const item of items) {
+        if (item.type === "image" && item.imageData && item.imageData.startsWith("data:image/")) {
+          // Extract base64 and media type from data URL
+          const match = item.imageData.match(/^data:(image\/[^;]+);base64,(.+)$/);
+          if (match) {
+            messageContent.push({
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: match[1],
+                data: match[2],
+              },
+            });
+          }
+        }
+      }
+
       try {
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            messages: [{ role: "user", content: systemPrompt + "\n\nTrigger: " + userMessage }],
+            messages: [{ role: "user", content: messageContent }],
             skill: "__raw__",
           }),
         });

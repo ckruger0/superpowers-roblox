@@ -1,10 +1,11 @@
-import type { Editor } from "tldraw";
+import type { Editor, TLAsset } from "tldraw";
 
 export interface CanvasItem {
   id: string;
   type: "text" | "image" | "drawing";
   content: string;
   position: { x: number; y: number };
+  imageData?: string; // base64 data URL for images
 }
 
 // tldraw v3 uses richText (ProseMirror doc format) instead of plain text
@@ -13,10 +14,8 @@ function extractTextFromRichText(richText: unknown): string {
 
   const rt = richText as { type?: string; content?: unknown[]; text?: string };
 
-  // If it has a direct text field, use it
   if (typeof rt.text === "string") return rt.text;
 
-  // ProseMirror doc structure: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "..." }] }] }
   if (rt.type === "doc" && Array.isArray(rt.content)) {
     const texts: string[] = [];
     for (const block of rt.content) {
@@ -38,16 +37,29 @@ function extractTextFromRichText(richText: unknown): string {
 }
 
 function getShapeText(props: Record<string, unknown>): string {
-  // Try richText first (tldraw v3+)
   if (props.richText) {
     const text = extractTextFromRichText(props.richText);
     if (text) return text;
   }
-  // Fall back to plain text prop (older tldraw)
   if (typeof props.text === "string") {
     return props.text.trim();
   }
   return "";
+}
+
+function getImageDataUrl(editor: Editor, assetId: string): string | undefined {
+  const asset = editor.getAsset(assetId as TLAsset["id"]);
+  if (!asset) return undefined;
+
+  const props = asset.props as Record<string, unknown>;
+  const src = props.src as string | undefined;
+
+  // tldraw stores uploaded images as base64 data URLs or blob URLs
+  if (src && (src.startsWith("data:image/") || src.startsWith("blob:"))) {
+    return src;
+  }
+
+  return undefined;
 }
 
 export function extractCanvasContext(editor: Editor): CanvasItem[] {
@@ -72,11 +84,15 @@ export function extractCanvasContext(editor: Editor): CanvasItem[] {
         });
       }
     } else if (shape.type === "image") {
+      const assetId = props.assetId as string | undefined;
+      const imageData = assetId ? getImageDataUrl(editor, assetId) : undefined;
+
       items.push({
         id: shape.id,
         type: "image",
         content: "(uploaded image)",
         position: pos,
+        imageData,
       });
     } else if (shape.type === "draw") {
       items.push({
@@ -86,7 +102,6 @@ export function extractCanvasContext(editor: Editor): CanvasItem[] {
         position: pos,
       });
     } else if (textContent) {
-      // Catch-all: any shape with text
       items.push({
         id: shape.id,
         type: "text",
@@ -105,11 +120,11 @@ export function buildCanvasPrompt(items: CanvasItem[]): string {
   let prompt = "Here's everything on the canvas right now:\n\n";
   for (const item of items) {
     if (item.type === "text") {
-      prompt += `- Text at (${item.position.x}, ${item.position.y}): "${item.content}"\n`;
+      prompt += `- Text (id: ${item.id}): "${item.content}"\n`;
     } else if (item.type === "image") {
-      prompt += `- Image at (${item.position.x}, ${item.position.y})\n`;
+      prompt += `- Image (id: ${item.id}): uploaded image${item.imageData ? " [image data attached below]" : " [no image data available]"}\n`;
     } else if (item.type === "drawing") {
-      prompt += `- Drawing at (${item.position.x}, ${item.position.y})\n`;
+      prompt += `- Drawing (id: ${item.id}): freehand drawing\n`;
     }
   }
 
