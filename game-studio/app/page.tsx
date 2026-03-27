@@ -69,9 +69,12 @@ export default function Home() {
       {/* Top navbar */}
       <div className="h-12 flex-shrink-0 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-5 z-50">
         {/* Left: project name */}
-        <span className="text-neutral-200 font-semibold text-sm tracking-tight">
-          Pepe Silvia
-        </span>
+        <div className="flex items-center gap-2">
+          <img src="/pepe_silvia_logo.png" alt="Pepe Silvia" className="h-6 w-6 rounded" />
+          <span className="text-neutral-200 font-semibold text-sm tracking-tight">
+            Pepe Silvia
+          </span>
+        </div>
 
         {/* Center: tab switcher */}
         <div className="flex items-center gap-0.5 bg-neutral-800/60 rounded-lg p-0.5">
