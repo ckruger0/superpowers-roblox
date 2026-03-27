@@ -38,11 +38,24 @@ export default function Home() {
   const [mcpStatus, setMcpStatus] = useState<McpStatus>({ connected: false });
   const [activeTab, setActiveTab] = useState<Tab>("ideate");
   const [showAbout, setShowAbout] = useState(false);
+  const [studioSpaces, setStudioSpaces] = useState<Array<{ name: string; id: string }>>([]);
+  const [showSpaces, setShowSpaces] = useState(false);
 
   useEffect(() => {
     fetch("/api/mcp/status")
       .then((r) => r.json())
-      .then(setMcpStatus)
+      .then((status: McpStatus) => {
+        setMcpStatus(status);
+        // If connected, fetch spaces in the background
+        if (status.connected) {
+          fetch("/api/mcp/spaces")
+            .then((r) => r.json())
+            .then((data: { spaces: Array<{ name: string; id: string }> }) => {
+              setStudioSpaces(data.spaces || []);
+            })
+            .catch(() => {});
+        }
+      })
       .catch(() => setMcpStatus({ connected: false, error: "Backend unreachable" }));
   }, []);
 
@@ -113,8 +126,12 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Right: studio connection */}
-        <div className="flex items-center gap-1.5">
+        {/* Right: studio connection with hover popover */}
+        <div
+          className="relative flex items-center gap-1.5 cursor-default"
+          onMouseEnter={() => studioSpaces.length > 0 && setShowSpaces(true)}
+          onMouseLeave={() => setShowSpaces(false)}
+        >
           <div
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: mcpStatus.connected ? palette.success : palette.textFaint }}
@@ -122,6 +139,32 @@ export default function Home() {
           <span className="text-xs" style={{ color: palette.textMuted }}>
             {mcpStatus.connected ? "Studio Connected" : "No Studio"}
           </span>
+
+          {/* Spaces hover popover */}
+          {showSpaces && studioSpaces.length > 0 && (
+            <div
+              className="absolute top-full right-0 mt-2 rounded-lg shadow-lg py-1.5 min-w-[200px] z-50"
+              style={{ backgroundColor: palette.bgCard, border: `1px solid ${palette.borderLight}` }}
+            >
+              <div className="px-3 py-1">
+                <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: palette.textFaint }}>
+                  Open Spaces
+                </span>
+              </div>
+              {studioSpaces.map((space) => (
+                <button
+                  key={space.id}
+                  className="w-full px-3 py-1.5 text-left text-xs transition-colors flex items-center gap-2"
+                  style={{ color: palette.textSecondary }}
+                  onMouseOver={(e) => (e.currentTarget.style.backgroundColor = palette.bgCardHover)}
+                  onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                >
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: palette.success }} />
+                  {space.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
