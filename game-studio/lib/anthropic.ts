@@ -207,20 +207,50 @@ export async function streamConversation(
             hasImage: !!screenshotUrl,
             imageUrl: screenshotUrl,
           });
+
+          // Send the image back to Claude as a vision block so it can SEE what was captured
+          const b64Match = imageUrl?.match(/;base64,(.+)$/);
+          const mimeMatch = imageUrl?.match(/^data:([^;]+)/);
+          if (b64Match && mimeMatch) {
+            toolResults.push({
+              type: "tool_result",
+              tool_use_id: toolUse.id,
+              content: [
+                {
+                  type: "image",
+                  source: {
+                    type: "base64",
+                    media_type: mimeMatch[1],
+                    data: b64Match[1],
+                  },
+                },
+                {
+                  type: "text",
+                  text: "Screenshot captured. Look at this image carefully. Evaluate what you see against the game design — what looks good, what needs to change? Then continue building or ask the user for feedback.",
+                },
+              ],
+            });
+          } else {
+            toolResults.push({
+              type: "tool_result",
+              tool_use_id: toolUse.id,
+              content: "Screenshot captured but image data could not be extracted.",
+            });
+          }
         } else {
           const preview = resultStr.length > 2000
             ? resultStr.slice(0, 2000) + "...(truncated)"
             : result;
           callbacks.onToolResult(toolUse.name, preview);
-        }
 
-        toolResults.push({
-          type: "tool_result",
-          tool_use_id: toolUse.id,
-          content: resultStr.length > 100000
-            ? resultStr.slice(0, 100000) + "...(truncated for Claude)"
-            : resultStr,
-        });
+          toolResults.push({
+            type: "tool_result",
+            tool_use_id: toolUse.id,
+            content: resultStr.length > 100000
+              ? resultStr.slice(0, 100000) + "...(truncated for Claude)"
+              : resultStr,
+          });
+        }
       } catch (error) {
         const errMsg =
           error instanceof Error ? error.message : String(error);
