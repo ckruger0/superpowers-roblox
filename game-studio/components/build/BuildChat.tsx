@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { GameDesignDoc } from "@/lib/types";
 import { palette } from "@/lib/themes";
+import Markdown from "@/components/shared/Markdown";
 
 interface BuildMessage {
   id: string;
@@ -125,14 +126,14 @@ Keep messages concise. Show your work visually.`;
                 }
               } else if (eventType === "tool_result") {
                 if (data.name === "screen_capture" && data.result) {
-                  const resultStr = typeof data.result === "string" ? data.result : JSON.stringify(data.result);
-                  const imageMatch = resultStr.match(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/);
-                  if (imageMatch) {
+                  const result = data.result;
+                  const imageUrl = result?.imageUrl ?? null;
+                  if (imageUrl) {
                     addMessage({
                       role: "assistant",
                       content: "",
                       type: "screenshot",
-                      imageUrl: imageMatch[0],
+                      imageUrl,
                     });
                   }
                 }
@@ -282,13 +283,13 @@ Keep messages concise. Show your work visually.`;
                   className="rounded-xl p-4"
                   style={{ backgroundColor: palette.bgCard, border: `1px solid ${palette.borderLight}` }}
                 >
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: palette.textPrimary }}>
-                    {msg.content || (
-                      <span className="animate-pulse" style={{ color: palette.textFaint }}>
-                        Thinking...
-                      </span>
-                    )}
-                  </p>
+                  {msg.content ? (
+                    <Markdown content={msg.content} />
+                  ) : (
+                    <p className="text-sm animate-pulse" style={{ color: palette.textFaint }}>
+                      Thinking...
+                    </p>
+                  )}
                 </div>
               )}
 

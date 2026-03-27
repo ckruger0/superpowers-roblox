@@ -121,11 +121,28 @@ export async function streamConversation(
           toolUse.name,
           toolUse.input as Record<string, unknown>
         );
-        callbacks.onToolResult(toolUse.name, result);
+
+        // For screen_capture, extract the image and send it separately
+        // Don't send the full base64 through the tool_result SSE event
+        const resultStr = JSON.stringify(result);
+        if (toolUse.name === "screen_capture") {
+          const imageMatch = resultStr.match(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/);
+          callbacks.onToolResult(toolUse.name, {
+            hasImage: true,
+            imageUrl: imageMatch?.[0] ?? null,
+          });
+        } else {
+          // Truncate large results for the SSE stream
+          const preview = resultStr.length > 2000
+            ? resultStr.slice(0, 2000) + "...(truncated)"
+            : result;
+          callbacks.onToolResult(toolUse.name, preview);
+        }
+
         toolResults.push({
           type: "tool_result",
           tool_use_id: toolUse.id,
-          content: JSON.stringify(result),
+          content: resultStr,
         });
       } catch (error) {
         const errMsg =
