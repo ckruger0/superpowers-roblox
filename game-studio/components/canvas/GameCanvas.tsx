@@ -245,7 +245,7 @@ ${gddContext}
 ${conversationRef.current.map((m) => `${m.role === "user" ? "Kid" : "You"}: ${m.content}`).join("\n") || "(First interaction — welcome them!)"}
 
 ## Rules
-- SHORT messages: 1-2 sentences max. You're a speech bubble, not an essay.
+- ULTRA SHORT messages: one sentence max, ideally under 10 words. You're a tiny bubble on a canvas. "A volcano obby?" or "Should the lava rise?" — that short.
 - CONNECT THE DOTS: When you see a new item, relate it to existing items. "Oh! The volcano picture + 'lava obby' — you want a lava obby INSIDE a volcano?"
 - Reference specific canvas items by quoting their text or describing images.
 - 2-3 quick reply buttons that move design forward. Make them specific, not generic.

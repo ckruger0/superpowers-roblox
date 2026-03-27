@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import type { Theme } from "@/lib/themes";
+import { palette } from "@/lib/themes";
 
 export interface QuickReply {
   label: string;
@@ -29,18 +30,30 @@ export default function AIBubble({
   draggable = false,
   theme,
 }: AIBubbleProps) {
-  const [freeformOpen, setFreeformOpen] = useState(false);
+  const [replyOpen, setReplyOpen] = useState(false);
   const [freeformText, setFreeformText] = useState("");
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [placement, setPlacement] = useState<"above" | "below">("above");
   const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const currentPos = dragPos ?? position;
 
+  // Determine whether to show above or below the anchor based on available space
+  useEffect(() => {
+    if (dragPos) return; // Don't adjust when dragged
+    const navbarHeight = 48;
+    const bubbleHeight = 120; // rough estimate
+    if (currentPos.y - bubbleHeight < navbarHeight) {
+      setPlacement("below");
+    } else {
+      setPlacement("above");
+    }
+  }, [currentPos.y, dragPos]);
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!draggable) return;
-      // Only drag from the header area
       const target = e.target as HTMLElement;
       if (!target.closest("[data-drag-handle]")) return;
 
@@ -55,11 +68,9 @@ export default function AIBubble({
 
       const handleMove = (ev: PointerEvent) => {
         if (!dragRef.current) return;
-        const dx = ev.clientX - dragRef.current.startX;
-        const dy = ev.clientY - dragRef.current.startY;
         setDragPos({
-          x: dragRef.current.origX + dx,
-          y: dragRef.current.origY + dy,
+          x: dragRef.current.origX + (ev.clientX - dragRef.current.startX),
+          y: dragRef.current.origY + (ev.clientY - dragRef.current.startY),
         });
       };
 
@@ -75,108 +86,162 @@ export default function AIBubble({
     [draggable, currentPos]
   );
 
+  // Clamp position to viewport
+  const clampedX = Math.max(120, Math.min(currentPos.x, window.innerWidth - 120));
+  const clampedY = Math.max(60, Math.min(currentPos.y, window.innerHeight - 60));
+
+  const isAbove = placement === "above" && !dragPos;
+
   return (
     <div
       ref={containerRef}
       className="absolute z-40 pointer-events-auto"
       style={{
-        left: currentPos.x,
-        top: currentPos.y,
-        transform: "translate(-50%, -100%) translateY(-16px)",
-        maxWidth: 320,
-        minWidth: 220,
+        left: clampedX,
+        top: clampedY,
+        transform: isAbove
+          ? "translate(-50%, -100%) translateY(-12px)"
+          : "translate(-50%, 12px)",
+        maxWidth: 280,
+        minWidth: 180,
       }}
       onPointerDown={handlePointerDown}
     >
-      <div className={`${theme?.bubbleBg ?? "bg-[#faf7f4]"} border ${theme?.bubbleBorder ?? "border-[#e8dfd6]"} rounded-xl shadow-2xl overflow-hidden transition-colors duration-300`}>
+      {/* Pointer triangle — above */}
+      {!dragPos && placement === "below" && (
+        <div className="flex justify-center mb-[-6px] relative z-10">
+          <div
+            className="w-2.5 h-2.5 transform rotate-45"
+            style={{ backgroundColor: palette.bgCard, border: `1px solid ${palette.borderLight}`, borderBottom: "none", borderRight: "none" }}
+          />
+        </div>
+      )}
+
+      <div
+        className="rounded-xl shadow-lg overflow-hidden"
+        style={{ backgroundColor: palette.bgCard, border: `1px solid ${palette.borderLight}` }}
+      >
         {/* Header — drag handle */}
         <div
           data-drag-handle
-          className={`flex items-center justify-between px-3 py-1.5 border-b ${theme?.bubbleBorder ?? "border-[#e8dfd6]"} cursor-grab active:cursor-grabbing select-none`}
+          className="flex items-center justify-between px-2.5 py-1 cursor-grab active:cursor-grabbing select-none"
+          style={{ borderBottom: `1px solid ${palette.borderLight}` }}
         >
           <div className="flex items-center gap-1.5">
-            <div className={`w-1.5 h-1.5 rounded-full ${theme?.thinkingColor ?? "bg-[#c5a3d9]"}`} />
-            <span className={`${theme?.bubbleAccent ?? "text-[#8b6baa]"} text-[10px] font-medium`}>AI</span>
+            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: palette.accent }} />
+            <span className="text-[10px] font-medium" style={{ color: palette.accentDark }}>AI</span>
           </div>
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDismiss();
-            }}
-            className="text-black/30 hover:text-black/60 text-xs transition-colors"
+            onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+            className="text-black/20 hover:text-black/50 text-xs transition-colors leading-none"
           >
             ×
           </button>
         </div>
 
-        {/* Message */}
-        <div className="px-3 py-2">
-          <p className="text-[#3d2e1e] text-sm leading-relaxed">{message}</p>
+        {/* Message — compact */}
+        <div className="px-2.5 py-2">
+          <p className="text-[13px] leading-snug" style={{ color: palette.textPrimary }}>
+            {message}
+          </p>
         </div>
 
-        {/* Quick replies */}
-        {quickReplies.length > 0 && (
-          <div className="px-3 pb-2 flex flex-wrap gap-1.5">
-            {quickReplies.map((reply) => (
-              <button
-                key={reply.value}
-                onClick={() => onReply(reply.value)}
-                className={`px-3 py-1 text-xs font-medium rounded-full ${theme?.bubbleBtnBg ?? "bg-[#f0eae4]"} text-[#5c4f3d] border ${theme?.bubbleBtnBorder ?? "border-[#e0d5c9]"} ${theme?.bubbleBtnHover ?? "hover:bg-[#e8daf0] hover:border-[#c5a3d9] hover:text-[#6b4d8a]"} transition-colors`}
-              >
-                {reply.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Freeform input */}
-        {showFreeform && !freeformOpen && (
-          <div className="px-3 pb-2">
+        {/* Reply button — collapsed state */}
+        {!replyOpen && (
+          <div className="px-2.5 pb-2">
             <button
-              onClick={() => setFreeformOpen(true)}
-              className="text-[11px] text-black/40 hover:text-black/70 transition-colors"
+              onClick={() => setReplyOpen(true)}
+              className="w-full py-1.5 text-[11px] font-medium rounded-lg transition-colors"
+              style={{
+                backgroundColor: palette.accentBg,
+                color: palette.accentText,
+              }}
             >
-              + Add more detail...
+              Reply
             </button>
           </div>
         )}
 
-        {showFreeform && freeformOpen && (
-          <div className="px-3 pb-2">
-            <div className={`flex items-center gap-1.5 ${theme?.bubbleBtnBg ?? "bg-[#f0eae4]"} rounded-lg px-2.5 py-1.5 border ${theme?.bubbleBtnBorder ?? "border-[#e0d5c9]"} transition-colors`}>
-              <input
-                value={freeformText}
-                onChange={(e) => setFreeformText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && freeformText.trim()) {
-                    onReply(freeformText.trim());
-                    setFreeformText("");
-                  }
-                }}
-                placeholder="Type here..."
-                className="flex-1 bg-transparent text-[#3d2e1e] text-xs outline-none placeholder-black/30"
-                autoFocus
-              />
-              <button
-                onClick={() => {
-                  if (freeformText.trim()) {
-                    onReply(freeformText.trim());
-                    setFreeformText("");
-                  }
-                }}
-                className={`${theme?.bubbleAccent ?? "text-[#8b6baa]"} text-xs transition-colors`}
+        {/* Reply panel — expanded */}
+        {replyOpen && (
+          <div className="px-2.5 pb-2 space-y-1.5">
+            {/* Quick replies */}
+            {quickReplies.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {quickReplies.map((reply) => (
+                  <button
+                    key={reply.value}
+                    onClick={() => { onReply(reply.value); setReplyOpen(false); }}
+                    className="px-2.5 py-1 text-[11px] font-medium rounded-full transition-colors"
+                    style={{
+                      backgroundColor: palette.bgCardHover,
+                      color: palette.textSecondary,
+                      border: `1px solid ${palette.border}`,
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.backgroundColor = palette.accentBg;
+                      e.currentTarget.style.borderColor = palette.accent;
+                      e.currentTarget.style.color = palette.accentText;
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.backgroundColor = palette.bgCardHover;
+                      e.currentTarget.style.borderColor = palette.border;
+                      e.currentTarget.style.color = palette.textSecondary;
+                    }}
+                  >
+                    {reply.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Freeform input */}
+            {showFreeform && (
+              <div
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1.5"
+                style={{ backgroundColor: palette.bgCardHover, border: `1px solid ${palette.border}` }}
               >
-                ➤
-              </button>
-            </div>
+                <input
+                  value={freeformText}
+                  onChange={(e) => setFreeformText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && freeformText.trim()) {
+                      onReply(freeformText.trim());
+                      setFreeformText("");
+                      setReplyOpen(false);
+                    }
+                  }}
+                  placeholder="Or type something..."
+                  className="flex-1 bg-transparent text-[11px] outline-none"
+                  style={{ color: palette.textPrimary }}
+                  autoFocus
+                />
+                <button
+                  onClick={() => {
+                    if (freeformText.trim()) {
+                      onReply(freeformText.trim());
+                      setFreeformText("");
+                      setReplyOpen(false);
+                    }
+                  }}
+                  className="text-xs transition-colors"
+                  style={{ color: freeformText.trim() ? palette.accentDark : palette.textFaint }}
+                >
+                  ➤
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Pointer triangle */}
-      {!dragPos && (
-        <div className="flex justify-center">
-          <div className={`w-3 h-3 ${theme?.bubbleBg ?? "bg-[#faf7f4]"} border-r border-b ${theme?.bubbleBorder ?? "border-[#e8dfd6]"} transform rotate-45 -mt-1.5`} />
+      {/* Pointer triangle — below */}
+      {!dragPos && placement === "above" && (
+        <div className="flex justify-center mt-[-6px] relative z-10">
+          <div
+            className="w-2.5 h-2.5 transform rotate-45"
+            style={{ backgroundColor: palette.bgCard, border: `1px solid ${palette.borderLight}`, borderTop: "none", borderLeft: "none" }}
+          />
         </div>
       )}
     </div>
