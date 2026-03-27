@@ -30,6 +30,7 @@ interface HistoryEntry {
 interface GameCanvasProps {
   onGddUpdate?: (section: string, content: string, status: string) => void;
   onHistoryChange?: (history: HistoryEntry[]) => void;
+  onNavigateToCreate?: () => void;
   gdd?: GameDesignDoc;
   theme?: Theme;
 }
@@ -54,7 +55,7 @@ const components: TLComponents = {
   ZoomMenu: null,
 };
 
-export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd, theme }: GameCanvasProps) {
+export default function GameCanvas({ onGddUpdate, onHistoryChange, onNavigateToCreate, gdd, theme }: GameCanvasProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [bubble, setBubble] = useState<BubbleState | null>(null);
   const [isThinking, setIsThinking] = useState(false);
@@ -344,7 +345,15 @@ Strategy:
 - If vision and mechanics are filled, your next question MUST be about narrative or levelPlan (whichever is missing).
 - When a user gives you ANY useful info, immediately try to fill the relevant GDD section. Don't wait for explicit confirmation on obvious things.
 - Use "drafting" status aggressively. Lock later.
-- When all 4 are filled, say "Ready to build! Head to Create tab" — don't keep drilling.
+
+## When ALL 4 GDD sections are filled:
+- Your message MUST be something like "We have enough to build V1! Ready?"
+- Quick replies MUST include a "Let's build!" option
+- If the user says they want to add more, let them — but every 2-3 interactions after that, gently push again: "V1 is ready to go — building it will give us real feedback to improve on. Start building?"
+- The best feedback comes from PLAYING, not planning. Push for V1.
+
+## When user says "Let's build" or similar:
+- Set the response field "navigateToCreate": true in your JSON response (see format below)
 
 ## When to Update the Game Design Doc
 - "vision": When you understand the core idea (game type + vibe + setting)
@@ -360,22 +369,24 @@ IMPORTANT: Respond with valid JSON only:
   "anchorItemId": "id of the canvas item to show the bubble near — pick the NEWEST relevant one",
   "canvasNotes": [{"text": "short label or summary to add to the moodboard", "nearItemId": "id of canvas item to place it near"}] or null,
   "connections": [{"fromId": "canvas item id", "toId": "canvas item id"}] or null,
-  "gddUpdates": [{"section": "vision|mechanics|narrative|levelPlan", "content": "...", "status": "drafting|locked"}] or null
+  "gddUpdates": [{"section": "vision|mechanics|narrative|levelPlan", "content": "...", "status": "drafting|locked"}] or null,
+  "navigateToCreate": true/false (only true when user confirms they want to start building)
 }
 
 ## When to add canvasNotes — BE VERY SELECTIVE
-Only add a canvasNote when a FIRM DECISION is made — the user explicitly confirms something. Examples:
-- User confirms "yes, rising lava" → add note "Rising lava ✓"
-- User picks "volcano escape" as the story → add note "Volcano escape ✓"
+Only add a canvasNote when a FIRM DECISION is made. The note should be a concise capture of what was decided — combining your question and the user's answer into one label. Examples:
+- You asked "scary or chill?" → user picked "scary" → add note "Vibe: scary"
+- You asked "rising lava?" → user said yes → add note "Rising lava ✓"
+- User picks "volcano escape" → add note "Theme: volcano escape"
+
+The note is a SUMMARY of the decision, not the user's raw text. 2-4 words max.
 
 Do NOT add notes for:
 - Your own questions or suggestions
 - Vague or tentative ideas
-- Things the user just mentioned but hasn't committed to
-- Restating what the user already wrote on the canvas
+- Anything the user hasn't committed to
 
-Most responses should have canvasNotes: null. Only 1 in 4-5 interactions should pin something.
-Keep notes to 2-4 words max.
+Most responses should have canvasNotes: null. Only when a clear decision is made.
 
 ## When to add connections — BE SELECTIVE
 Only connect items when the user explicitly links two ideas, or when a confirmed decision ties back to something on the canvas. Don't connect everything — a few meaningful lines are better than a web of clutter. Most responses should have connections: null.`;
@@ -450,6 +461,7 @@ Only connect items when the user explicitly links two ideas, or when a confirmed
         let gddUpdates: Array<{ section: string; content: string; status: string }> | null = null;
         let canvasNotes: Array<{ text: string; nearItemId?: string }> | null = null;
         let connections: Array<{ fromId: string; toId: string }> | null = null;
+        let shouldNavigateToCreate = false;
 
         try {
           const jsonMatch = fullText.match(/\{[\s\S]*\}/);
@@ -460,6 +472,7 @@ Only connect items when the user explicitly links two ideas, or when a confirmed
             gddUpdates = parsed.gddUpdates || null;
             canvasNotes = parsed.canvasNotes || null;
             connections = parsed.connections || null;
+            shouldNavigateToCreate = parsed.navigateToCreate === true;
           }
         } catch {
           aiMessage = fullText.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
@@ -513,6 +526,11 @@ Only connect items when the user explicitly links two ideas, or when a confirmed
             for (const update of gddUpdates) {
               onGddUpdate?.(update.section, update.content, update.status);
             }
+          }
+
+          // Navigate to Create tab if AI says so
+          if (shouldNavigateToCreate) {
+            setTimeout(() => onNavigateToCreate?.(), 1500);
           }
         }
       } catch (error) {
@@ -590,11 +608,8 @@ Only connect items when the user explicitly links two ideas, or when a confirmed
   }, [editor, bubble?.anchorId, bubble?.dragOffset, getShapeScreenPos]);
 
   const handleBubbleReply = (text: string) => {
-    // Place the user's reply on the canvas near the bubble's anchor
-    const replyNoteId = placeReplyOnCanvas(text, bubble?.anchorId);
-    if (replyNoteId && bubble?.anchorId) {
-      connectShapes(bubble.anchorId, replyNoteId);
-    }
+    // Don't place every reply on canvas — the AI's canvasNotes will
+    // add concise decision summaries when something substantive is confirmed
 
     setHistory((prev) => {
       const updated = [...prev];
@@ -605,7 +620,7 @@ Only connect items when the user explicitly links two ideas, or when a confirmed
       return updated;
     });
     setBubble(null);
-    askAI(replyNoteId ?? undefined, text);
+    askAI(bubble?.anchorId ?? undefined, text);
   };
 
   return (

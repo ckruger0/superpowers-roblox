@@ -193,7 +193,7 @@ export default function App() {
       {/* Content area — canvas stays mounted (hidden) to preserve state */}
       <div className="flex-1 overflow-hidden relative">
         <div className={`absolute inset-0 ${activeTab === "ideate" ? "" : "hidden"}`}>
-          <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} theme={theme} />
+          <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} theme={theme} onNavigateToCreate={() => setActiveTab("create")} />
         </div>
 
         {activeTab === "design" && (
