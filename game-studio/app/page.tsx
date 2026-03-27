@@ -84,7 +84,7 @@ export default function Home() {
 
       {/* Canvas fills everything */}
       <div className="flex-1 overflow-hidden relative">
-        <GameCanvas onGddUpdate={handleGddUpdate} />
+        <GameCanvas onGddUpdate={handleGddUpdate} gdd={gdd} />
       </div>
 
       {/* GDD bottom bar */}

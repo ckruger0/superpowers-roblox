@@ -5,6 +5,7 @@ import { Tldraw, Editor, TLShapeId, TLComponents } from "tldraw";
 import "tldraw/tldraw.css";
 import AIBubble, { QuickReply } from "./AIBubble";
 import { extractCanvasContext, buildCanvasPrompt } from "@/lib/canvas-context";
+import type { GameDesignDoc } from "@/lib/types";
 
 const TLDRAW_LICENSE =
   "tldraw-2026-06-22/WyJVc3NwazFPQiIsWyIqIl0sMTYsIjIwMjYtMDYtMjIiXQ.F/7993pPgWC+etoylsfs4uwen7ECd5ozjOXeGutxjO9A8gfDfYMbKl3FtOBEM/6U6Ej79sgSX24bYzl51WDaXw";
@@ -27,6 +28,7 @@ interface HistoryEntry {
 interface GameCanvasProps {
   onGddUpdate?: (section: string, content: string, status: string) => void;
   onHistoryChange?: (history: HistoryEntry[]) => void;
+  gdd?: GameDesignDoc;
 }
 
 // Hide most of tldraw's UI — we only want select, draw, text
@@ -43,7 +45,7 @@ const components: TLComponents = {
   SharePanel: null,
 };
 
-export default function GameCanvas({ onGddUpdate, onHistoryChange }: GameCanvasProps) {
+export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd }: GameCanvasProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [bubble, setBubble] = useState<BubbleState | null>(null);
   const [isThinking, setIsThinking] = useState(false);
@@ -95,27 +97,55 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange }: GameCanvasP
         triggerDesc = `The user replied: "${replyText}"`;
       }
 
-      const systemPrompt = `You are an AI creative director helping a kid design a Roblox game. You live on their creative canvas — they're placing text notes, images, and drawings, and your job is to connect the dots into a game concept.
+      // Build GDD context
+      const gddSections: string[] = [];
+      if (gdd) {
+        if (gdd.vision.content) gddSections.push(`Vision (${gdd.vision.status}): ${gdd.vision.content}`);
+        if (gdd.mechanics.content) gddSections.push(`Mechanics (${gdd.mechanics.status}): ${gdd.mechanics.content}`);
+        if (gdd.narrative.content) gddSections.push(`Narrative (${gdd.narrative.status}): ${gdd.narrative.content}`);
+        if (gdd.levelPlan.content) gddSections.push(`Level Plan (${gdd.levelPlan.status}): ${gdd.levelPlan.content}`);
+      }
+      const gddContext = gddSections.length > 0
+        ? `\n## What We've Decided So Far (Game Design Doc)\n${gddSections.join("\n")}`
+        : "\n## Game Design Doc\nNothing decided yet — we're still exploring.";
 
-Rules:
-- Be excited and encouraging. Match the energy of a creative kid.
-- Keep messages SHORT — 1-2 sentences max.
-- Reference specific things on the canvas by quoting them.
-- When you notice connections between items, call them out enthusiastically.
-- Always suggest 2-3 quick reply options that move the design forward.
-- Don't ask more than one question at a time.
-- As the game concept solidifies, fill in the game design document sections.
+      const systemPrompt = `You are an AI creative director helping a kid design a Roblox game. You live on their creative canvas — they dump ideas (text, images, drawings) and you connect the dots into a game concept.
 
+## Your Role
+You are watching a shared creative space in real time. Every time something new appears or the user responds, you see the FULL canvas plus everything discussed so far. Your job is to:
+1. Notice what just changed (the trigger)
+2. Connect it to everything ELSE on the canvas and in the conversation
+3. Push the game design forward with one focused question or observation
+
+## Canvas Right Now
 ${canvasPrompt}
+${gddContext}
 
-Conversation so far:
-${conversationRef.current.map((m) => `${m.role}: ${m.content}`).join("\n") || "(none yet)"}
+## Conversation History
+${conversationRef.current.map((m) => `${m.role === "user" ? "Kid" : "You"}: ${m.content}`).join("\n") || "(First interaction — welcome them!)"}
+
+## Rules
+- SHORT messages: 1-2 sentences max. You're a speech bubble, not an essay.
+- CONNECT THE DOTS: When you see a new item, relate it to existing items. "Oh! The volcano picture + 'lava obby' — you want a lava obby INSIDE a volcano?"
+- Reference specific canvas items by quoting their text or describing images.
+- 2-3 quick reply buttons that move design forward. Make them specific, not generic.
+- ONE question at a time. Never ask two things.
+- When enough context exists for a GDD section, include a gddUpdate to fill it in.
+- Be genuinely excited — you're building a game with a kid!
+- If this is the first interaction, react to what's on the canvas with enthusiasm and ask what they have in mind.
+
+## When to Update the Game Design Doc
+- "vision": When you understand the core idea (game type + vibe + setting)
+- "mechanics": When a core gameplay mechanic is confirmed (not just mentioned — confirmed by the kid)
+- "narrative": When the story/motivation/atmosphere is clear
+- "levelPlan": When there's a rough structure (how many sections, difficulty progression)
+Use status "drafting" for proposals, "locked" when the kid confirms.
 
 IMPORTANT: Respond with valid JSON only:
 {
   "message": "your message text",
-  "quickReplies": [{"label": "Button Text", "value": "response value"}, ...],
-  "anchorItemId": "id of the canvas item to anchor the bubble to (pick the most relevant one)",
+  "quickReplies": [{"label": "Short Button Text", "value": "what this means"}],
+  "anchorItemId": "id of the canvas item to show the bubble near — pick the NEWEST relevant one",
   "gddUpdates": [{"section": "vision|mechanics|narrative|levelPlan", "content": "...", "status": "drafting|locked"}] or null
 }`;
 
