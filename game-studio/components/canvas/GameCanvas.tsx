@@ -201,36 +201,49 @@ IMPORTANT: Respond with valid JSON only:
     [editor, isThinking, getShapeScreenPos, onGddUpdate, onHistoryChange]
   );
 
-  // Watch for canvas changes
+  // Track when document changes happen (new shapes, edits)
+  const pendingTriggerRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!editor) return;
 
-    const unsubscribe = editor.store.listen(
+    // Listen for document changes (new shapes, shape edits)
+    const unsubDoc = editor.store.listen(
       () => {
-        // Check if new items were added or content changed
         const items = extractCanvasContext(editor);
-        const selectedIds = editor.getSelectedShapeIds();
-
-        // Only trigger AI when nothing is selected (user finished editing)
-        if (selectedIds.length > 0) return;
-
-        // Only trigger if the item count changed (something new was placed)
         if (items.length !== lastItemCountRef.current && items.length > 0) {
           lastItemCountRef.current = items.length;
-
-          // Debounce — wait for the user to stop making changes
-          if (debounceRef.current) clearTimeout(debounceRef.current);
-          debounceRef.current = setTimeout(() => {
-            const newest = items[items.length - 1];
-            askAI(newest?.id);
-          }, 800);
+          // Mark that we have a pending trigger — the newest item
+          const newest = items[items.length - 1];
+          pendingTriggerRef.current = newest?.id ?? null;
         }
       },
       { source: "user", scope: "document" }
     );
 
+    // Listen for selection changes (session scope) — this is how we detect deselection
+    const unsubSession = editor.store.listen(
+      () => {
+        const selectedIds = editor.getSelectedShapeIds();
+
+        // User just deselected everything AND we have a pending trigger
+        if (selectedIds.length === 0 && pendingTriggerRef.current) {
+          const triggerId = pendingTriggerRef.current;
+          pendingTriggerRef.current = null;
+
+          // Debounce to let things settle
+          if (debounceRef.current) clearTimeout(debounceRef.current);
+          debounceRef.current = setTimeout(() => {
+            askAI(triggerId);
+          }, 600);
+        }
+      },
+      { source: "user", scope: "session" }
+    );
+
     return () => {
-      unsubscribe();
+      unsubDoc();
+      unsubSession();
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [editor, askAI]);
