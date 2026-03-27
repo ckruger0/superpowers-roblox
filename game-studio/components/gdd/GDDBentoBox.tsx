@@ -8,55 +8,45 @@ interface GDDBentoBoxProps {
   visible: boolean;
 }
 
-const accentColors: Record<string, string> = {
-  red: "#e94560",
-  green: "#53d769",
-  yellow: "#ffd43b",
-  blue: "#5ac8fa",
+const accentColors: Record<string, { text: string; border: string; bg: string }> = {
+  rose: { text: "text-rose-400", border: "border-rose-500/30", bg: "bg-rose-500/10" },
+  emerald: { text: "text-emerald-400", border: "border-emerald-500/30", bg: "bg-emerald-500/10" },
+  amber: { text: "text-amber-400", border: "border-amber-500/30", bg: "bg-amber-500/10" },
+  sky: { text: "text-sky-400", border: "border-sky-500/30", bg: "bg-sky-500/10" },
 };
 
 function GDDCard({ section }: { section: GDDSection }) {
-  const color = accentColors[section.accent] ?? "#888";
+  const colors = accentColors[section.accent] ?? accentColors.sky;
 
   return (
     <div
-      className="rounded-lg p-2.5 transition-all"
-      style={{
-        background: "#0f3460",
-        border:
-          section.status === "empty"
-            ? "1px dashed #333"
-            : `1px solid ${color}30`,
-      }}
+      className={`rounded-lg p-2.5 transition-all ${
+        section.status === "empty"
+          ? "border border-dashed border-neutral-700 bg-neutral-800/30"
+          : `border ${colors.border} ${colors.bg}`
+      }`}
     >
       <div className="flex items-center gap-1.5 mb-1">
-        <span
-          className="text-[9px] font-bold uppercase tracking-wider"
-          style={{ color }}
-        >
+        <span className={`text-[10px] font-semibold uppercase tracking-wider ${colors.text}`}>
           {section.status === "locked" && "✓ "}
           {section.title}
         </span>
         {section.status === "drafting" && (
-          <span
-            className="text-[8px] px-1.5 py-0.5 rounded-full"
-            style={{ background: `${color}20`, color }}
-          >
-            drafting...
+          <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${colors.bg} ${colors.text}`}>
+            drafting
           </span>
         )}
       </div>
       <div
-        className={`text-[10px] leading-relaxed ${
+        className={`text-[11px] leading-relaxed ${
           section.status === "empty"
-            ? "text-gray-600 italic"
-            : "text-[#c8d6e5]"
+            ? "text-neutral-600 italic"
+            : "text-neutral-300"
         }`}
       >
         {section.status === "empty"
           ? "Waiting for input..."
-          : section.content.slice(0, 60) +
-            (section.content.length > 60 ? "..." : "")}
+          : section.content.slice(0, 60) + (section.content.length > 60 ? "..." : "")}
       </div>
     </div>
   );
@@ -67,51 +57,49 @@ export default function GDDBentoBox({ gdd, visible }: GDDBentoBoxProps) {
 
   if (!visible) return null;
 
-  const allLocked =
-    gdd.vision.status === "locked" &&
-    gdd.mechanics.status === "locked" &&
-    gdd.narrative.status === "locked" &&
-    gdd.levelPlan.status === "locked";
-
   const hasContent =
     gdd.vision.status !== "empty" ||
     gdd.mechanics.status !== "empty" ||
     gdd.narrative.status !== "empty" ||
     gdd.levelPlan.status !== "empty";
 
+  const allLocked =
+    gdd.vision.status === "locked" &&
+    gdd.mechanics.status === "locked" &&
+    gdd.narrative.status === "locked" &&
+    gdd.levelPlan.status === "locked";
+
   return (
-    <div className="flex-shrink-0 bg-[#16213e] border-t border-gray-800">
-      {/* Header - always visible */}
+    <div className="flex-shrink-0 bg-neutral-900 border-t border-neutral-800">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-4 py-1.5 hover:bg-[#1a2744] transition-colors"
+        className="w-full flex items-center justify-between px-4 py-1.5 hover:bg-neutral-800/50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="text-[#5ac8fa] text-xs font-semibold">
-            {gdd.title} — Game Design Doc
+          <span className="text-neutral-300 text-xs font-medium">
+            Game Design Doc
           </span>
           {allLocked && (
-            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-[#53d769]/20 text-[#53d769]">
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
               locked
             </span>
           )}
           {hasContent && !allLocked && (
-            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-[#5ac8fa]/20 text-[#5ac8fa]">
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-sky-500/10 text-sky-400">
               drafting
             </span>
           )}
           {!hasContent && (
-            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-gray-700/50 text-gray-500">
+            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-neutral-800 text-neutral-600">
               empty
             </span>
           )}
         </div>
-        <span className="text-gray-500 text-[10px]">
+        <span className="text-neutral-600 text-[10px]">
           {isExpanded ? "▾" : "▴"}
         </span>
       </button>
 
-      {/* Bento grid */}
       {isExpanded && (
         <div className="px-3 pb-2 grid grid-cols-4 gap-2">
           <GDDCard section={gdd.vision} />
