@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Tldraw, Editor, TLShapeId } from "tldraw";
+import { Tldraw, Editor, TLShapeId, TLComponents } from "tldraw";
 import "tldraw/tldraw.css";
 import AIBubble, { QuickReply } from "./AIBubble";
-import { extractCanvasContext, buildCanvasPrompt, CanvasItem } from "@/lib/canvas-context";
+import { extractCanvasContext, buildCanvasPrompt } from "@/lib/canvas-context";
 
 const TLDRAW_LICENSE =
   "tldraw-2026-06-22/WyJVc3NwazFPQiIsWyIqIl0sMTYsIjIwMjYtMDYtMjIiXQ.F/7993pPgWC+etoylsfs4uwen7ECd5ozjOXeGutxjO9A8gfDfYMbKl3FtOBEM/6U6Ej79sgSX24bYzl51WDaXw";
@@ -14,6 +14,7 @@ interface BubbleState {
   quickReplies: QuickReply[];
   anchorId: string;
   screenPosition: { x: number; y: number };
+  dragOffset?: { x: number; y: number };
 }
 
 interface HistoryEntry {
@@ -28,11 +29,25 @@ interface GameCanvasProps {
   onHistoryChange?: (history: HistoryEntry[]) => void;
 }
 
+// Hide most of tldraw's UI — we only want select, draw, text
+const components: TLComponents = {
+  StylePanel: null,
+  NavigationPanel: null,
+  PageMenu: null,
+  ActionsMenu: null,
+  MainMenu: null,
+  DebugPanel: null,
+  DebugMenu: null,
+  HelpMenu: null,
+  QuickActions: null,
+  SharePanel: null,
+};
+
 export default function GameCanvas({ onGddUpdate, onHistoryChange }: GameCanvasProps) {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [bubble, setBubble] = useState<BubbleState | null>(null);
   const [isThinking, setIsThinking] = useState(false);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [, setHistory] = useState<HistoryEntry[]>([]);
   const conversationRef = useRef<Array<{ role: string; content: string }>>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastItemCountRef = useRef(0);
@@ -42,13 +57,11 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange }: GameCanvasP
     editor.user.updateUserPreferences({ colorScheme: "dark" });
   }, []);
 
-  // Get screen position for a shape (for bubble placement)
   const getShapeScreenPos = useCallback(
     (shapeId: string): { x: number; y: number } | null => {
       if (!editor) return null;
       const bounds = editor.getShapePageBounds(shapeId as TLShapeId);
       if (!bounds) return null;
-      // Get the center-top of the shape in screen coords
       const screenPoint = editor.pageToScreen({
         x: bounds.x + bounds.width / 2,
         y: bounds.y,
@@ -58,7 +71,6 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange }: GameCanvasP
     [editor]
   );
 
-  // Ask the AI about the current canvas state
   const askAI = useCallback(
     async (triggerItemId?: string, replyText?: string) => {
       if (!editor || isThinking) return;
@@ -72,7 +84,6 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange }: GameCanvasP
 
       const canvasPrompt = buildCanvasPrompt(items);
 
-      // Build the trigger description
       let triggerDesc = "The user is working on their canvas.";
       if (triggerItemId) {
         const item = items.find((i) => i.id === triggerItemId);
@@ -121,7 +132,6 @@ IMPORTANT: Respond with valid JSON only:
           }),
         });
 
-        // Read the SSE stream and collect the full response
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
         if (!reader) throw new Error("No reader");
@@ -146,10 +156,8 @@ IMPORTANT: Respond with valid JSON only:
           }
         }
 
-        // Parse the AI response
         let parsed;
         try {
-          // Try to find JSON in the response
           const jsonMatch = fullText.match(/\{[\s\S]*\}/);
           parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
         } catch {
@@ -157,12 +165,8 @@ IMPORTANT: Respond with valid JSON only:
         }
 
         if (parsed?.message) {
-          conversationRef.current.push({
-            role: "assistant",
-            content: parsed.message,
-          });
+          conversationRef.current.push({ role: "assistant", content: parsed.message });
 
-          // Find which item to anchor to
           const anchorId = parsed.anchorItemId || triggerItemId || items[items.length - 1]?.id;
           const screenPos = anchorId ? getShapeScreenPos(anchorId) : null;
 
@@ -170,10 +174,9 @@ IMPORTANT: Respond with valid JSON only:
             message: parsed.message,
             quickReplies: parsed.quickReplies || [],
             anchorId: anchorId || "",
-            screenPosition: screenPos || { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+            screenPosition: screenPos || { x: window.innerWidth / 2, y: window.innerHeight / 3 },
           });
 
-          // Update history
           const entry: HistoryEntry = {
             timestamp: Date.now(),
             trigger: triggerDesc,
@@ -185,7 +188,6 @@ IMPORTANT: Respond with valid JSON only:
             return next;
           });
 
-          // Handle GDD updates
           if (parsed.gddUpdates) {
             for (const update of parsed.gddUpdates) {
               onGddUpdate?.(update.section, update.content, update.status);
@@ -201,43 +203,30 @@ IMPORTANT: Respond with valid JSON only:
     [editor, isThinking, getShapeScreenPos, onGddUpdate, onHistoryChange]
   );
 
-  // Track when document changes happen (new shapes, edits)
+  // Track canvas changes
   const pendingTriggerRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!editor) return;
 
-    // Listen for document changes (new shapes, shape edits)
     const unsubDoc = editor.store.listen(
       () => {
-        const allShapes = editor.getCurrentPageShapes();
-        console.log("[doc] shapes:", allShapes.length, allShapes.map(s => ({ type: s.type, props: s.props })));
-
         const items = extractCanvasContext(editor);
-        console.log("[doc] extracted items:", items.length, items);
-        console.log("[doc] lastItemCount:", lastItemCountRef.current);
-
         if (items.length !== lastItemCountRef.current && items.length > 0) {
           lastItemCountRef.current = items.length;
           const newest = items[items.length - 1];
           pendingTriggerRef.current = newest?.id ?? null;
-          console.log("[doc] pending trigger set:", pendingTriggerRef.current);
         }
       },
       { source: "user", scope: "document" }
     );
 
-    // Listen for selection changes (session scope)
     const unsubSession = editor.store.listen(
       () => {
         const selectedIds = editor.getSelectedShapeIds();
-        console.log("[session] selected:", selectedIds.length, "pending:", pendingTriggerRef.current);
-
         if (selectedIds.length === 0 && pendingTriggerRef.current) {
           const triggerId = pendingTriggerRef.current;
           pendingTriggerRef.current = null;
-          console.log("[session] FIRING AI for:", triggerId);
-
           if (debounceRef.current) clearTimeout(debounceRef.current);
           debounceRef.current = setTimeout(() => {
             askAI(triggerId);
@@ -254,9 +243,9 @@ IMPORTANT: Respond with valid JSON only:
     };
   }, [editor, askAI]);
 
-  // Update bubble position when canvas moves
+  // Update bubble position when canvas pans/zooms
   useEffect(() => {
-    if (!editor || !bubble) return;
+    if (!editor || !bubble || bubble.dragOffset) return;
 
     const updateBubblePos = () => {
       const pos = getShapeScreenPos(bubble.anchorId);
@@ -265,17 +254,15 @@ IMPORTANT: Respond with valid JSON only:
       }
     };
 
-    // Listen for camera changes
     const unsubscribe = editor.store.listen(updateBubblePos, {
       source: "user",
       scope: "session",
     });
 
     return unsubscribe;
-  }, [editor, bubble?.anchorId, getShapeScreenPos]);
+  }, [editor, bubble?.anchorId, bubble?.dragOffset, getShapeScreenPos]);
 
   const handleBubbleReply = (text: string) => {
-    // Record in history
     setHistory((prev) => {
       const updated = [...prev];
       if (updated.length > 0) {
@@ -284,7 +271,6 @@ IMPORTANT: Respond with valid JSON only:
       onHistoryChange?.(updated);
       return updated;
     });
-
     setBubble(null);
     askAI(undefined, text);
   };
@@ -292,10 +278,34 @@ IMPORTANT: Respond with valid JSON only:
   return (
     <div className="w-full h-full relative">
       <style jsx global>{`
-        .tlui-style-panel__wrapper { display: none !important; }
+        /* Hide tldraw panels we replaced */
+        .tlui-style-panel__wrapper,
+        .tlui-menu-zone,
+        .tlui-helper-buttons {
+          display: none !important;
+        }
+        /* Only show select, hand, draw, text, and asset tools */
+        .tlui-toolbar .tlui-toolbar__tools {
+          gap: 2px;
+        }
+        /* Hide tools we don't want */
+        .tlui-toolbar .tlui-toolbar__tools button[data-testid="tools.eraser"],
+        .tlui-toolbar .tlui-toolbar__tools button[data-testid="tools.arrow"],
+        .tlui-toolbar .tlui-toolbar__tools button[data-testid="tools.laser"],
+        .tlui-toolbar .tlui-toolbar__tools button[data-testid="tools.frame"],
+        .tlui-toolbar .tlui-toolbar__tools button[data-testid="tools.highlight"],
+        .tlui-toolbar .tlui-toolbar__tools button[data-testid="tools.note"],
+        .tlui-toolbar .tlui-toolbar__extras,
+        .tlui-toolbar__overflow {
+          display: none !important;
+        }
       `}</style>
 
-      <Tldraw licenseKey={TLDRAW_LICENSE} onMount={handleMount} />
+      <Tldraw
+        licenseKey={TLDRAW_LICENSE}
+        onMount={handleMount}
+        components={components}
+      />
 
       {/* AI thinking indicator */}
       {isThinking && (
@@ -313,6 +323,7 @@ IMPORTANT: Respond with valid JSON only:
           position={bubble.screenPosition}
           onReply={handleBubbleReply}
           onDismiss={() => setBubble(null)}
+          draggable
         />
       )}
     </div>
