@@ -5,7 +5,7 @@ import { Tldraw, Editor, TLShapeId, TLComponents } from "tldraw";
 import "tldraw/tldraw.css";
 import AIBubble, { QuickReply } from "./AIBubble";
 import CanvasToolbar from "./CanvasToolbar";
-import { extractCanvasContext, buildCanvasPrompt } from "@/lib/canvas-context";
+import { extractCanvasContext, extractCanvasContextWithDrawings, buildCanvasPrompt } from "@/lib/canvas-context";
 import type { GameDesignDoc } from "@/lib/types";
 import type { Theme } from "@/lib/themes";
 
@@ -97,7 +97,8 @@ export default function GameCanvas({ onGddUpdate, onHistoryChange, gdd, theme }:
       if (!editor || isThinking) return;
       setIsThinking(true);
 
-      const items = extractCanvasContext(editor);
+      // Use async extraction to capture drawings as images
+      const items = await extractCanvasContextWithDrawings(editor);
       if (items.length === 0 && !replyText) {
         setIsThinking(false);
         return;
@@ -182,7 +183,7 @@ IMPORTANT: Respond with valid JSON only:
 
       // Attach images from canvas as vision content
       for (const item of items) {
-        if (item.type === "image" && item.imageData && item.imageData.startsWith("data:image/")) {
+        if ((item.type === "image" || item.type === "drawing") && item.imageData && item.imageData.startsWith("data:image/")) {
           // Extract base64 and media type from data URL
           const match = item.imageData.match(/^data:(image\/[^;]+);base64,(.+)$/);
           if (match) {

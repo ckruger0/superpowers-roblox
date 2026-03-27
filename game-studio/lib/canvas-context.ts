@@ -1,11 +1,11 @@
-import type { Editor, TLAsset } from "tldraw";
+import type { Editor, TLAsset, TLShapeId } from "tldraw";
 
 export interface CanvasItem {
   id: string;
   type: "text" | "image" | "drawing";
   content: string;
   position: { x: number; y: number };
-  imageData?: string; // base64 data URL for images
+  imageData?: string; // base64 data URL for images and drawings
 }
 
 // tldraw v3 uses richText (ProseMirror doc format) instead of plain text
@@ -54,7 +54,6 @@ function getImageDataUrl(editor: Editor, assetId: string): string | undefined {
   const props = asset.props as Record<string, unknown>;
   const src = props.src as string | undefined;
 
-  // tldraw stores uploaded images as base64 data URLs or blob URLs
   if (src && (src.startsWith("data:image/") || src.startsWith("blob:"))) {
     return src;
   }
@@ -62,6 +61,59 @@ function getImageDataUrl(editor: Editor, assetId: string): string | undefined {
   return undefined;
 }
 
+async function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Capture a drawing shape as a PNG base64 data URL using tldraw's SVG export
+async function captureDrawingAsImage(
+  editor: Editor,
+  shapeId: string
+): Promise<string | undefined> {
+  try {
+    // Get the SVG string for this shape
+    const result = await editor.getSvgString([shapeId as TLShapeId], {
+      padding: 16,
+    });
+    if (!result) return undefined;
+
+    const { svg: svgString, width, height } = result;
+
+    // Convert SVG to PNG via canvas
+    const canvas = document.createElement("canvas");
+    const scale = 2; // 2x for retina clarity
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return undefined;
+
+    const img = new Image();
+    const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+
+    return new Promise<string | undefined>((resolve) => {
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(undefined);
+      };
+      img.src = url;
+    });
+  } catch {
+    return undefined;
+  }
+}
+
+// Synchronous extraction — no drawing capture
 export function extractCanvasContext(editor: Editor): CanvasItem[] {
   const items: CanvasItem[] = [];
 
@@ -100,6 +152,7 @@ export function extractCanvasContext(editor: Editor): CanvasItem[] {
         type: "drawing",
         content: "(freehand drawing)",
         position: pos,
+        // imageData will be filled in by extractCanvasContextWithDrawings
       });
     } else if (textContent) {
       items.push({
@@ -114,6 +167,28 @@ export function extractCanvasContext(editor: Editor): CanvasItem[] {
   return items;
 }
 
+// Async extraction that captures drawings as images
+export async function extractCanvasContextWithDrawings(
+  editor: Editor
+): Promise<CanvasItem[]> {
+  const items = extractCanvasContext(editor);
+
+  // Capture all drawings as images in parallel
+  const drawingCaptures = items
+    .filter((item) => item.type === "drawing" && !item.imageData)
+    .map(async (item) => {
+      const imageData = await captureDrawingAsImage(editor, item.id);
+      if (imageData) {
+        item.imageData = imageData;
+        item.content = "(freehand drawing) [image captured]";
+      }
+    });
+
+  await Promise.all(drawingCaptures);
+
+  return items;
+}
+
 export function buildCanvasPrompt(items: CanvasItem[]): string {
   if (items.length === 0) return "The canvas is empty.";
 
@@ -122,9 +197,9 @@ export function buildCanvasPrompt(items: CanvasItem[]): string {
     if (item.type === "text") {
       prompt += `- Text (id: ${item.id}): "${item.content}"\n`;
     } else if (item.type === "image") {
-      prompt += `- Image (id: ${item.id}): uploaded image${item.imageData ? " [image data attached below]" : " [no image data available]"}\n`;
+      prompt += `- Image (id: ${item.id}): uploaded image${item.imageData ? " [image data attached]" : ""}\n`;
     } else if (item.type === "drawing") {
-      prompt += `- Drawing (id: ${item.id}): freehand drawing\n`;
+      prompt += `- Drawing (id: ${item.id}): freehand drawing${item.imageData ? " [drawing image attached — look at this carefully to understand what was drawn]" : ""}\n`;
     }
   }
 
